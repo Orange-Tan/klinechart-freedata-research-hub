@@ -116,6 +116,10 @@ export function LightweightChart({ data, symbol, live = true }: LightweightChart
       // 增量：找到与已渲染最后一根同时间戳的位置，从那里开始逐根 update()。
       // update() 对同时间戳是替换、对新时间戳是追加，所以既覆盖"当前未收 K 线
       // 的 close/volume 刷新"，也覆盖"新开一根 K 线"两种实时推送场景。
+      // 边界：如果已渲染的最后一根时间戳并不存在于新 data 里（订阅竞态把
+      // 未收 K 线当成已收，历史随后覆盖到同一根并把它"收掉"；或历史被整体
+      // 重置），增量循环对那根只会"跳过 + 追加"新 bar，导致这段被丢掉。
+      // 检测到 startIdx 缺失就退化到全量重设（各库都是这么处理整体替换的）。
       const startIdx = data.findIndex((d) => d.time === lastTime);
       if (startIdx < 0) {
         candle.setData(data.map(toCandle));
