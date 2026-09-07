@@ -58,6 +58,25 @@ export function HQChart({ data, symbol, period, live = true }: HQChartProps) {
     const el = containerRef.current;
     if (!el) return;
 
+    // 深色主题覆盖：HQChart 默认在画布上画一条浅色标题栏背景（FrameTitleBGColor
+    // 默认 rgb(246,251,253)，也就是卡片上方那个"白色大框"），加上浅色边框/分割线。
+    // jsChartStyle 必须在 jsChartInit 之前调用才会生效（它改的是全局资源默认值）。
+    // 这里把标题栏背景对齐到卡片背景 #111625、边框/网格对齐到 #1c2333，
+    // 并把标题栏里的 OHLC 文字（Title.*）调成浅灰，视觉上整个标题栏与深色卡片融为一体。
+    chartApi.jsChartStyle({
+      FrameTitleBGColor: '#111625',
+      FrameBorderPen: '#1c2333',
+      FrameSplitPen: '#1c2333',
+      FrameSplitTextColor: '#8b949e',
+      Title: {
+        NameColor: '#8b949e',
+        DateTimeColor: '#8b949e',
+        SettingColor: '#8b949e',
+        VolColor: '#8b949e',
+        AmountColor: '#8b949e',
+      },
+    });
+
     const instance = chartApi.jsChartInit(el);
     instanceRef.current = instance;
 
