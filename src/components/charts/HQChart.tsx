@@ -119,6 +119,13 @@ export function HQChart({ data, symbol, period, live = true }: HQChartProps) {
       }
       chartContainerRef.current = null;
       instanceRef.current = null;
+
+      // ChartDestroy 只清内部实例，不清理 DOM（canvas/tooltip/toolbar 都会残留）。
+      // React StrictMode 在开发态会挂载→卸载→再挂载同一 effect，若不清掉上一次
+      // 图表创建的节点，第二次初始化会叠出两个图表实例（第二个画到容器外 y=914
+      // 的节点上，K 线不可见）。这里统一移除 el 下所有库生成的子节点。
+      el.querySelectorAll('.jschart-drawing, .jschart-drawing-extra, .jschart-tooltip, .UMyChart_FrameToolbar_Div, .UMyChart_Toolbar_Tooltip_Div')
+        .forEach((node) => node.remove());
     };
   }, []); // 只创建一次；NetworkFilter 通过 ref 读取最新 symbol/data
 
