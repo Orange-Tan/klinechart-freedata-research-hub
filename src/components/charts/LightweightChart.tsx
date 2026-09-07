@@ -146,7 +146,9 @@ export function LightweightChart({ data, symbol, live = true }: LightweightChart
 
 function toCandle(d: OHLCV) {
   return {
-    time: d.time as UTCTimestamp,
+    // Binance 的 d.time 是毫秒，UTCTimestamp 期望秒（typings.d.ts:5005），
+    // 不转换会被当成秒 → 日期放大 1000 倍漂到 57647 年
+    time: (d.time / 1000) as UTCTimestamp,
     open: d.open,
     high: d.high,
     low: d.low,
@@ -156,7 +158,7 @@ function toCandle(d: OHLCV) {
 
 function toVolume(d: OHLCV) {
   return {
-    time: d.time as UTCTimestamp,
+    time: (d.time / 1000) as UTCTimestamp,
     value: d.volume,
     color: d.close >= d.open ? UPDOWN_COLORS.up : UPDOWN_COLORS.down,
   };

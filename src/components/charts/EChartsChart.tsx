@@ -120,6 +120,33 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
     d.volume,
     d.close >= d.open ? UPDOWN.up : UPDOWN.down,
   ]);
+  // 底部日期：OHLCV.time 是毫秒时间戳，category 轴默认把原始值当刻度文字
+  // 直接显示（1757000000000），必须转成日期。日 K 显示 "YYYY-MM-DD"，
+  // 分钟线补 "HH:mm"。
+  const daily = data.length > 1 && data[1].time - data[0].time >= 86_400_000;
+  const fmt = (ms: number) => {
+    const d = new Date(ms);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    return daily ? date : `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  // 工具提示：axis 触发时头部默认也显示原始 category 值，同样转成日期
+  const fmtTooltip = (params: unknown): string => {
+    const list = (Array.isArray(params) ? params : [params]) as {
+      marker?: string;
+      seriesName?: string;
+      value?: unknown;
+      axisValue?: unknown;
+    }[];
+    const title = list[0]?.axisValue !== undefined ? fmt(Number(list[0].axisValue)) : '';
+    const rows = list
+      .map((p) => {
+        const v = Array.isArray(p.value) ? String(p.value[0]) : String(p.value);
+        return `${p.marker ?? ''}${p.seriesName ?? ''}: ${v}`;
+      })
+      .join('<br/>');
+    return title ? `${title}<br/>${rows}` : rows;
+  };
 
   return {
     backgroundColor: '#0f1420',
@@ -129,6 +156,7 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'cross' },
+      formatter: fmtTooltip,
       backgroundColor: '#1a2233',
       borderColor: '#2b3245',
     },
@@ -142,7 +170,7 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
         data: times,
         boundaryGap: true,
         axisLine: { lineStyle: { color: '#2b3245' } },
-        axisLabel: { color: '#8b949e' },
+        axisLabel: { color: '#8b949e', formatter: (v: string | number) => fmt(Number(v)) },
         splitLine: { show: false },
         min: 'dataMin',
         max: 'dataMax',
@@ -178,7 +206,13 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
     ],
     dataZoom: [
       { type: 'inside', xAxisIndex: [0, 1], start: 60, end: 100 },
-      { type: 'slider', xAxisIndex: [0, 1], top: '94%', height: 16 },
+      {
+        type: 'slider',
+        xAxisIndex: [0, 1],
+        top: '94%',
+        height: 16,
+        labelFormatter: (value: number) => fmt(value),
+      },
     ],
     series: [
       {
