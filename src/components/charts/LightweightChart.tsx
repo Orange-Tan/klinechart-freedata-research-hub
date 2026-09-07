@@ -45,6 +45,9 @@ export function LightweightChart({ data, symbol, live = true }: LightweightChart
         background: { type: ColorType.Solid, color: '#0f1420' },
         textColor: '#8b949e',
         fontSize: 11,
+        // 去掉左下角 TradingView attribution logo（许可要求见库 NOTICE 文件：
+        // 若页面上没有到 tradingview.com 的链接，需在代码/页面保留 attribution 声明）
+        attributionLogo: false,
       },
       grid: {
         vertLines: { color: '#1c2333' },
