@@ -62,13 +62,19 @@ export default function App() {
         if (cancelled) return;
         setHistory((prev) => {
           const last = prev[prev.length - 1];
+          let next: OHLCV[];
           // 同一根 K 线：替换最后一根；新的一根：追加
           if (last && last.time === bar.time) {
-            const next = prev.slice(0, -1);
+            next = prev.slice(0, -1);
             next.push(bar);
-            return next;
+          } else {
+            next = [...prev, bar];
           }
-          return [...prev, bar];
+          // 裁剪最老的一根，保持列表稳定（HISTORY_LIMIT 根），避免无限增长把图压扁
+          if (next.length > HISTORY_LIMIT) {
+            next = next.slice(next.length - HISTORY_LIMIT);
+          }
+          return next;
         });
       });
     }

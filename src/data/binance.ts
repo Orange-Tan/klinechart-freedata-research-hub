@@ -59,12 +59,17 @@ export class BinanceDataSource implements KlineDataSource {
   subscribe(symbol: string, period: KlinePeriod, onUpdate: (bar: OHLCV) => void): () => void {
     const INTERVAL_MS = 2_000;
     let closed = false;
+    // 飞行中的 fetch 无法中止，用 token 丢弃过期响应，避免旧请求串到新状态
+    let generation = 0;
     let lastBarTime = 0;
 
     const tick = async () => {
+      const gen = generation;
       if (closed) return;
       try {
         const bars = await this.fetchKlines(symbol, period, 2);
+        // 取到的快照已过期（symbol/period 已变）：丢弃，避免把旧数据交给订阅方
+        if (gen !== generation || closed) return;
         const latest = bars[bars.length - 1];
         if (latest && latest.time !== lastBarTime) {
           lastBarTime = latest.time;
@@ -80,6 +85,7 @@ export class BinanceDataSource implements KlineDataSource {
 
     return () => {
       closed = true;
+      generation += 1; // 使所有飞行中的响应过期
       window.clearInterval(timer);
     };
   }
