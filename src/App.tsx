@@ -30,7 +30,7 @@ const HISTORY_LIMIT = 300;
 export default function App() {
   const [sourceId, setSourceId] = useState<DataSourceId>('binance');
   const [symbol, setSymbol] = useState<string>(SYMBOLS[0]);
-  const [period, setPeriod] = useState<KlinePeriod>('1m');
+  const [period, setPeriod] = useState<KlinePeriod>('1d');
   const [live, setLive] = useState(true);
 
   const source = useMemo(() => getDataSource(sourceId), [sourceId]);
@@ -43,11 +43,19 @@ export default function App() {
     setError(null);
     setHistory([]);
 
+    // 历史加载完成标记。竞态根因：订阅轮询（limit=2）可能比历史请求先返回，
+    // 把"最新一根未收 K 线"当首批数据 setHistory([bar])，图表先画 1 根；
+    // 随后 300 根历史到达被各库当成"同序列增量"只更新最后一根 → 图上永远只剩
+    // 1 根（日 K 整天不换周期，复现率极高）。历史数据本身包含最新一根，所以
+    // 历史未就绪时收到的实时推送直接丢弃，图表拿到的首批数据永远是完整历史。
+    let historyLoaded = false;
+
     // 立即加载历史
     source
       .fetchKlines(symbol, period, HISTORY_LIMIT)
       .then((bars) => {
         if (cancelled) return;
+        historyLoaded = true;
         setHistory(bars);
       })
       .catch((err: unknown) => {
@@ -60,6 +68,7 @@ export default function App() {
     if (live && source.subscribe) {
       unsubscribe = source.subscribe(symbol, period, (bar) => {
         if (cancelled) return;
+        if (!historyLoaded) return; // 历史未就绪：丢弃竞态推送
         setHistory((prev) => {
           const last = prev[prev.length - 1];
           let next: OHLCV[];
