@@ -1,0 +1,28 @@
+{
+  "name": "kline-chart-compare",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "echarts": "^6.1.0",
+    "hqchart": "^1.1.15923",
+    "jquery": "^3.7.1",
+    "klinecharts": "^10.0.3",
+    "lightweight-charts": "^5.2.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "typescript": "~5.9.2",
+    "vite": "^8.2.2"
+  }
+}

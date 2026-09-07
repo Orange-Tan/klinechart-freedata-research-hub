@@ -32,3 +32,8 @@ Thumbs.db
 # Coverage / testing
 coverage/
 .nyc_output/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+blob-report/
