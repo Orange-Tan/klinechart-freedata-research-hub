@@ -63,7 +63,10 @@ export function HQChart({ data, symbol, period, live = true }: HQChartProps) {
     // jsChartStyle 必须在 jsChartInit 之前调用才会生效（它改的是全局资源默认值）。
     // 这里把标题栏背景对齐到卡片背景 #111625、边框/网格对齐到 #1c2333，
     // 并把标题栏里的 OHLC 文字（Title.*）调成浅灰，视觉上整个标题栏与深色卡片融为一体。
+    // DisableLogo 是库提供的官方开关：把 FrameLogo.Text 置空，画布上那句
+    // "*仅学习使用*" 声明就不再绘制。
     chartApi.jsChartStyle({
+      DisableLogo: true,
       FrameTitleBGColor: '#111625',
       FrameBorderPen: '#1c2333',
       FrameSplitPen: '#1c2333',
