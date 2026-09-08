@@ -72,12 +72,33 @@ docs/
 
 ## 🚀 快速开始
 
+### 环境要求
+
+- **Node.js ≥ 20.19**（或 22.12+；Vite 8 要求），建议用 [nvm](https://github.com/nvm-sh/nvm) 管理版本
+- npm ≥ 10（随 Node 自带）
+
+### 安装与启动
+
 ```bash
 npm install
 npm run dev          # http://localhost:5173
 ```
 
+> 🇨🇳 大陆网络提示：默认 npm 源可能慢/失败，可指定镜像：
+>
+> ```bash
+> npm install --registry=https://registry.npmmirror.com
+> ```
+
 ### 测试
+
+先安装 Playwright 浏览器（首次）：
+
+```bash
+npx playwright install
+```
+
+再按顺序启动 dev server 与测试：
 
 ```bash
 npm run dev &        # 终端 1：dev server 需先跑在 5173
@@ -86,6 +107,20 @@ npx playwright test  # 终端 2：冒烟测试
 
 - `dashboard.spec.ts`：4 库渲染、切换交易对/周期同步刷新、无 console error
 - `datareport.spec.ts`：数据调研页渲染、一键检测全完成、无 pageerror
+
+### 🤖 交给 AI 智能体自动安装
+
+把本仓库链接（或本仓库根目录）交给支持执行终端命令的 AI 智能体（如 Claude Code），附上下面这段指令即可自动完成安装与自检：
+
+```text
+克隆/进入本仓库后，请依次执行并核对：
+1. node --version 需 ≥ 20.19（不满足先通过 nvm 切换）；
+2. npm install（大陆网络慢/失败时加 --registry=https://registry.npmmirror.com）；
+3. npm run dev 后台启动，并确认 http://localhost:5173 返回 200；
+4. npx playwright install（首次测试需要浏览器）；
+5. 运行 npx playwright test tests/dashboard.spec.ts 与 tests/datareport.spec.ts，
+   全部通过即安装成功。若失败，把报错信息反馈回来。
+```
 
 ---
 
