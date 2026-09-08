@@ -30,11 +30,11 @@ body {
   flex-direction: column;
   background: #111625;
   border-right: 1px solid #1c2333;
-  padding: 14px 8px;
-  gap: 16px;
+  padding: 14px 6px;
+  gap: 14px;
   overflow: hidden;
   white-space: nowrap;
-  /* 折叠态宽度 64px（只显示图标）；展开态宽度由内容撑开（自适应最宽条目） */
+  /* 折叠态宽度 56px（只显示图标）；展开态宽度由内容撑开（自适应最宽条目） */
   transition: width 0.2s ease;
 }
 
@@ -42,11 +42,14 @@ body {
   width: max-content;
   min-width: 0;
   /* max-content 基于最长内容的理想宽度，再限制在合理范围内避免过宽 */
-  max-width: 300px;
+  max-width: 240px;
 }
 
+/* 折叠态导航只留图标：条目压缩到刚好容纳 20px 图标 + 水平居中 */
 .sidebar.collapsed {
-  width: 64px;
+  width: 44px;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 /* 悬停展开按钮：折叠时占满顶部一行，展开时仅图标区可点 */
@@ -81,9 +84,9 @@ body {
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 9px 10px;
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -93,6 +96,8 @@ body {
   cursor: pointer;
   text-align: left;
   transition: background 0.15s, color 0.15s;
+  /* 折叠时配合窄内边距，让图标在 44px 列中真正居中（20px 图标 + 左右各 8px） */
+  margin: 0 -2px;
 }
 
 .sidebar-item:hover {
@@ -107,9 +112,10 @@ body {
 }
 
 .sidebar-icon {
-  font-size: 16px;
-  width: 22px;
+  font-size: 15px;
+  width: 20px;
   text-align: center;
+  flex: 0 0 20px;
 }
 
 .sidebar-foot {
@@ -129,6 +135,7 @@ body {
 .sidebar.collapsed .sidebar-item {
   justify-content: center;
   padding: 10px 0;
+  margin: 0;
 }
 
 /* ===== 右侧内容区 ===== */

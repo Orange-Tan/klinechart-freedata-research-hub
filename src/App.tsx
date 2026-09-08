@@ -43,7 +43,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot">数据源：Binance 公开 API</div>
+        <div className="sidebar-foot">数据源：Binance API</div>
       </aside>
       <div className="main">
         {page === 'dashboard' ? <Dashboard /> : <ResearchReport />}
