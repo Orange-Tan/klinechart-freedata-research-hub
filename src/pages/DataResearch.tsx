@@ -141,8 +141,9 @@ function MarketSection({
             <tr>
               <th>#</th>
               <th>数据源</th>
-              <th>历史</th>
+              <th>历史行情</th>
               <th>实时性</th>
+              <th>数据类型</th>
               <th>限制/注意</th>
               <th>使用条件</th>
               <th>连通性</th>
@@ -181,6 +182,7 @@ function MarketSection({
                     </td>
                     <td>{s.history}</td>
                     <td>{s.realtime}</td>
+                    <td className="dresearch-types">{s.types.join(' · ')}</td>
                     <td className="dresearch-limits">{s.limits}</td>
                     <td className="dresearch-access">
                       <div className="dresearch-tags">

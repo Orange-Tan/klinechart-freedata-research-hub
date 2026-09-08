@@ -79,18 +79,35 @@
   color: #26a69a;
 }
 
-/* 表格加宽 */
+/* 表格加宽：按内容合理分配各列宽度（合计 ≤ 内容区 ~1176px，窄屏走横向滚动兜底） */
 .dresearch-table th:nth-child(1) {
-  width: 56px;
+  width: 36px; /* # */
 }
 .dresearch-table th:nth-child(2) {
-  min-width: 250px;
+  min-width: 220px; /* 数据源 */
+}
+.dresearch-table th:nth-child(3) {
+  min-width: 110px; /* 历史行情 */
+}
+.dresearch-table th:nth-child(4) {
+  min-width: 140px; /* 实时性 */
+}
+.dresearch-table th:nth-child(5) {
+  min-width: 190px; /* 数据类型 */
 }
 .dresearch-table th:nth-child(6) {
-  min-width: 180px;
+  min-width: 140px; /* 限制/注意 */
 }
 .dresearch-table th:nth-child(7) {
-  min-width: 190px;
+  min-width: 150px; /* 使用条件 */
+}
+.dresearch-table th:nth-child(8) {
+  min-width: 150px; /* 连通性 */
+}
+/* 数据类型列 */
+.dresearch-types {
+  color: #9aa4b2;
+  line-height: 1.6;
 }
 
 .dresearch-table td {

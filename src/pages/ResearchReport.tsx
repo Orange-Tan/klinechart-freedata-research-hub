@@ -55,57 +55,101 @@ const CANDIDATES = [
   },
 ];
 
-/** 其他值得关注的库 */
+/** 其他值得关注的库（与 docs/图表库调研报告.md 保持一致） */
 const OTHERS = [
   {
     name: 'uPlot',
+    org: 'leeoniya',
     stars: '10.5k',
-    desc: '10x 性能，极速时序/OHLC 迷你图，MIT',
-    fit: '超大数据量时序、监控面板',
+    license: 'MIT',
+    render: 'Canvas',
+    size: '~55kb(gzip)',
+    maintain: '🟢 活跃',
+    desc: '官方定位"极致性能的极简时序图库"，宣称比同类快 10 倍：同一份数据 150k 点仍能 60fps 渲染，gzip 仅 ~55kb、零依赖。只做绘图引擎（不含指标/画线/交互组件），常被当作"底图"叠加自定义图层。',
+    fit: '超大数据量时序、监控面板、需要极速刷新的看板',
     warn: false,
   },
   {
     name: 'Plotly.js',
+    org: 'Plotly',
     stars: '18.3k',
-    desc: '交互/科学计算强，SVG+WebGL',
-    fit: '科学/金融研究绘图，Python 生态配合',
+    license: 'MIT',
+    render: 'SVG+WebGL',
+    size: '~400kb',
+    maintain: '🟢 活跃',
+    desc: '科学计算与交互图表之王，WebGL 加速可渲染百万级数据点，与 Python 的 Plotly / Dash 生态无缝互通（同一份配置前后端复用）。图表种类覆盖 3D/等高线/科学可视化，但包体积 ~400kb 偏大，K 线金融交互细节一般。',
+    fit: '科学/金融研究绘图、Python 生态配合的量化研究平台',
     warn: false,
   },
   {
     name: 'ApexCharts',
+    org: 'ApexCharts',
     stars: '15.1k',
-    desc: 'SVG 精美 UI',
-    fit: '业务仪表盘',
+    license: 'MIT(带条件)',
+    render: 'SVG',
+    size: '~200kb',
+    maintain: '🟢 活跃',
+    desc: 'SVG 渲染、UI 精美的通用图表库，图表类型丰富、上手快，内置主题与响应式适配。虽然仓库标注 MIT，但 SPDX 标识为"NOASSERTION"，实际是付费商用的变体，商用需购买授权。',
+    fit: '业务仪表盘、后台管理系统',
     warn: true,
   },
   {
     name: 'trading-vue-js',
+    org: 'tvjsx',
     stars: '2.3k',
-    desc: '可深度 hack 的 Vue 交易图',
-    fit: 'Vue 技术栈参考',
+    license: 'MIT',
+    render: 'Canvas',
+    size: '中等',
+    maintain: '🔴 停更(2024)',
+    desc: 'Vue 3 交易图表库，数据层与渲染层分离，支持叠加任意自定义图层（指标/事件/订单标记），可深度 hack 交易界面。但 2024 年起停止维护，且只适配 Vue 技术栈，仅作参考。',
+    fit: 'Vue 技术栈做自定义交易界面的参考实现',
     warn: true,
   },
   {
     name: 'TradingView charting-library',
+    org: 'TradingView',
     stars: '—',
-    desc: '闭源商用，功能天花板',
-    fit: '预算充足的专业终端',
+    license: '商用授权',
+    render: 'Canvas',
+    size: '大',
+    maintain: '🟢 商业产品',
+    desc: 'TradingView 官方收费图库，专业交易终端级功能天花板：内置上百种指标、画线、多周期联动、研究面板、深度移动端适配等开箱即用。完全闭源、按席位收费（自托管版），免费版需保留 TradingView 品牌且功能受限。',
+    fit: '预算充足的专业交易终端 / 券商产品',
+    warn: true,
+  },
+  {
+    name: 'Highcharts',
+    org: 'Highsoft',
+    stars: '12.5k',
+    license: '商用授权',
+    render: 'SVG',
+    size: '大',
+    maintain: '🟢 商业产品',
+    desc: '老牌图表库（highcharts.com 同源），SVG 渲染兼容性极好、文档与官方示例是业界标杆，另有 Highstock 专门做金融 K 线/OHLC。source-available 协议：非商用免费，商用需购买授权（数百美元级）。',
+    fit: '需要成熟文档与兼容性的商用产品（需购买授权）',
     warn: true,
   },
 ];
 
+/** 功能矩阵对比列：四大库 + 补充对比的 uPlot / Plotly */
+const MATRIX_COLS = [
+  ...CANDIDATES.map((c) => ({ name: c.name, accent: c.accent })),
+  { name: 'uPlot', accent: '#c0a5e0' },
+  { name: 'Plotly.js', accent: '#4fc1e9' },
+];
+
 /** 功能矩阵对比 */
-const MATRIX: { label: string; values: [string, string, string, string]; dim?: boolean }[] = [
-  { label: '开箱即用技术指标', values: ['❌ 需插件', '✅ 20+ 内置', '✅ 通达信/麦语言', '❌ 需实现'] },
-  { label: '画线工具', values: ['❌ 需插件', '✅', '✅', '❌ 需实现'] },
-  { label: '周期切换', values: ['✅', '✅', '✅', '需实现'] },
-  { label: '十字光标', values: ['✅', '✅', '✅', '⚠️ 弱'] },
-  { label: '缩放/平移', values: ['✅ 顺滑', '✅', '✅', '⚠️ 一般'] },
-  { label: '移动端适配', values: ['⚠️ 一般', '✅ 强', '✅ 小程序支持', '⚠️ 一般'] },
-  { label: '多市场(股票/期货/币)', values: ['⚠️ 需数据源', '✅', '✅ 最强', '⚠️ 通用'] },
-  { label: '中文文档', values: ['⚠️ 一般', '✅', '✅', '✅'] },
-  { label: '扩展性', values: ['✅ v5 插件体系', '✅ 注册式', '✅ 数据替换接口', '✅ 系列扩展'] },
-  { label: '大数据性能', values: ['优', '优', '良', '优(大数据时降级)'] },
+const MATRIX: { label: string; values: [string, string, string, string, string, string]; dim?: boolean }[] = [
+  { label: '开箱即用技术指标', values: ['❌ 需插件', '✅ 20+ 内置', '✅ 通达信/麦语言', '❌ 需实现', '❌ 需自建', '❌ 需实现'] },
+  { label: '画线工具', values: ['❌ 需插件', '✅', '✅', '❌ 需实现', '❌ 需自建', '❌ 需实现'] },
+  { label: '周期切换', values: ['✅', '✅', '✅', '需实现', '❌ 需自建', '❌ 需自建'] },
+  { label: '十字光标', values: ['✅', '✅', '✅', '⚠️ 弱', '❌ 需自建', '⚠️ 弱'] },
+  { label: '缩放/平移', values: ['✅ 顺滑', '✅', '✅', '⚠️ 一般', '⚠️ 需插件', '✅ 顺滑'] },
+  { label: '移动端适配', values: ['⚠️ 一般', '✅ 强', '✅ 小程序支持', '⚠️ 一般', '⚠️ 一般', '⚠️ 一般'] },
+  { label: '多市场(股票/期货/币)', values: ['⚠️ 需数据源', '✅', '✅ 最强', '⚠️ 通用', '⚠️ 需数据源', '⚠️ 需数据源'] },
+  { label: '中文文档', values: ['⚠️ 一般', '✅', '✅', '✅', '❌ 英文', '✅'] },
+  { label: '扩展性', values: ['✅ v5 插件体系', '✅ 注册式', '✅ 数据替换接口', '✅ 系列扩展', '✅ 插件+hook', '✅ 高度可配置'] },
+  { label: '大数据性能', values: ['优', '优', '良', '优(大数据时降级)', '极优', '优(WebGL)'] },
 ];
 
 /** 结论先行 —— 技术路线建议 */
@@ -258,9 +302,13 @@ export function ResearchReport() {
               <thead>
                 <tr>
                   <th>库</th>
+                  <th>作者/组织</th>
                   <th>Stars</th>
-                  <th>一句话评价</th>
-                  <th>适合场景</th>
+                  <th>协议</th>
+                  <th>渲染</th>
+                  <th>包体积</th>
+                  <th>维护</th>
+                  <th>详细介绍</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,12 +317,21 @@ export function ResearchReport() {
                     <td>
                       <strong>{o.name}</strong>
                     </td>
+                    <td>{o.org}</td>
                     <td>{o.stars}</td>
                     <td>
-                      {o.desc}
+                      <span className="license">{o.license}</span>
                       {o.warn && <span className="warn-tag">⚠️ 商用注意</span>}
                     </td>
-                    <td>{o.fit}</td>
+                    <td>{o.render}</td>
+                    <td>{o.size}</td>
+                    <td>{o.maintain}</td>
+                    <td>
+                      <p className="others-desc">{o.desc}</p>
+                      <p className="others-fit">
+                        <strong>最适合</strong>：{o.fit}
+                      </p>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -289,7 +346,7 @@ export function ResearchReport() {
               <thead>
                 <tr>
                   <th>能力</th>
-                  {CANDIDATES.map((c) => (
+                  {MATRIX_COLS.map((c) => (
                     <th key={c.name}>
                       <span className="lib-dot" style={{ background: c.accent }} />
                       {c.name}
