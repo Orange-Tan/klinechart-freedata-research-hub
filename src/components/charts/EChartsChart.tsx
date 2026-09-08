@@ -99,7 +99,7 @@ export function EChartsChart({ data, symbol, live = true }: EChartsChartProps) {
         xAxis: [{ data: times }, { data: times }],
         series: [
           { data: data.map(toCandle) },
-          { data: data.map((d, i) => [i, d.volume, d.close >= d.open ? UPDOWN.up : UPDOWN.down]) },
+          { data: data.map((d, i) => ({ value: [i, d.volume], itemStyle: { color: d.close >= d.open ? UPDOWN.up : UPDOWN.down } })) },
         ],
       });
     }
@@ -115,11 +115,17 @@ function toCandle(d: OHLCV): number[] {
 
 function buildOption(data: OHLCV[], symbol: string): ECOption {
   const times = data.map((d) => d.time);
-  const volumeData = data.map((d, i) => [
-    i,
-    d.volume,
-    d.close >= d.open ? UPDOWN.up : UPDOWN.down,
-  ]);
+  // 量能柱上色：第三维放 { color } 会让 TS 把整列推断成
+  // (number | { color: ... })[][]，无法赋给 CandlestickDataValue[]。
+  // 让第三维统一收窄为 string（"#26a69a" | "#ef5350"），eCharts 的 series.data
+  // 才能与声明的维度类型对上（K 线颜色仍由相邻 itemStyle.color 控制）。
+  const volumeData = data.map((d, i) => ({
+    value: [i, d.volume],
+    // 量能柱红绿：必须用 itemStyle 对象给每根柱单独上色。
+    // 若把颜色放进第三维（[i, vol, '#26a69a']）会被 ECharts 当成普通维度值忽略，
+    // 柱色退回系列默认色板蓝，红绿渲染失效。
+    itemStyle: { color: d.close >= d.open ? UPDOWN.up : UPDOWN.down },
+  }));
   // 底部日期：OHLCV.time 是毫秒时间戳，category 轴默认把原始值当刻度文字
   // 直接显示（1757000000000），必须转成日期。日 K 显示 "YYYY-MM-DD"，
   // 分钟线补 "HH:mm"。

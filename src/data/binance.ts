@@ -17,12 +17,16 @@ const INTERVAL: Record<KlinePeriod, string> = {
  * 返回数组：[
  *   [openTime, open, high, low, close, volume, closeTime, ...]
  * ]
+ *
+ * 注意：api.binance.com 在中国大陆直连不通（连接超时），改用同构公共数据端点
+ * data-api.binance.vision（S3 加速域名，无需 key，返回结构与 api.binance.com
+ * 完全一致；官方文档在 MARKET_DATA_BASE_URL 说明中有这个端点）。
  */
 export class BinanceDataSource implements KlineDataSource {
   readonly id = 'binance';
   readonly label = 'Binance 公开行情';
 
-  private readonly baseUrl = 'https://api.binance.com';
+  private readonly baseUrl = 'https://data-api.binance.vision';
 
   async fetchKlines(symbol: string, period: KlinePeriod, limit = 500): Promise<OHLCV[]> {
     const params = new URLSearchParams({

@@ -173,9 +173,34 @@ export function HQChart({ data, symbol, period, live = true }: HQChartProps) {
     if (!container) return;
     if (live) {
       const rows = toManualRows(data, periodRef.current);
+      // 保留用户当前平移位置：只让偏移跟着新增的 K 线前进，而不是每次强制跳回
+      // "最近一屏"。否则每 2s 一轮实时 tick 会把用户的缩放/平移视图重置掉
+      // （缩小看全貌时尤其明显，视图会瞬间跳回最新一段）。
+      // 一屏宽用当前缩放档位下实际可见根数 frame.XPointCount（初始 ~119，缩小后
+      // 变小），不能写死：默认加载根数（改成 300/500/1000）或用户缩放后，"最近
+      // 一屏"的落点随之变化，写死 120 会吞掉/多推回看位置。
       // DataOffset 必须显式传入：ManualUpdateKData 里 lastDataCount == kData.length，
-      // UpdateMainData 会算出 newDataCount=0 导致偏移不前进，这里直接跳到最新一页
-      container.ManualUpdateKData({ Data: rows, DataOffset: Math.max(0, rows.length - 120) });
+      // UpdateMainData 会算出 newDataCount=0 导致偏移不前进，这里主动加回增量。
+      const frame = container.Frame?.SubFrame?.[0]?.Frame;
+      const kd = frame?.Data;
+      const prevOffset = kd?.DataOffset;
+      const prevCount = kd?.Data?.length ?? 0;
+      const visible = frame?.XPointCount ?? 120; // 一屏宽（拿不到时退回旧行为）
+      const minOffset = Math.max(0, rows.length - visible);
+      // 用户在看旧数据（DataOffset 更小）时，偏移保留在原位；只有偏移已经贴在最
+      // 新一端（自动跟随）时才往前推，让新 K 线自然进入视野。
+      let nextOffset = minOffset;
+      if (typeof prevOffset === 'number') {
+        // 跟随模式：距新数据末尾不足一屏 → 偏移随新增量前进
+        const atLatest = prevOffset + visible >= prevCount;
+        if (atLatest) {
+          nextOffset = minOffset;
+        } else {
+          // 回看模式：保留用户当前偏移（数据被裁剪时向下夹取）
+          nextOffset = Math.min(prevOffset, minOffset);
+        }
+      }
+      container.ManualUpdateKData({ Data: rows, DataOffset: nextOffset });
     }
   }, [data, live]);
 

@@ -33,6 +33,23 @@ declare module 'hqchart' {
     AddEventCallback(callback: unknown): void;
     /** 声明为 API 周期数据源后，Recv* 不再对预聚合数据做 GetPeriodData 二次聚合 */
     IsApiPeriod: boolean;
+    /** 根 Frame（HQTradeFrame）。SubFrame[0].Frame 是主 K 线 frame，其 Data 是
+     *  绑定中的 ChartData（DataOffset 即当前平移到的数据下标），XPointCount 是
+     *  当前缩放档位下可见根数（一屏宽）。实时推送时需要读它们来保留用户当前的
+     *  平移位置、并按真实一屏宽计算跟随落点。 */
+    Frame?: {
+      Data?: HQChartData;
+      XPointCount?: number;
+      SubFrame?: Array<{ Frame?: { Data?: HQChartData; XPointCount?: number } }>;
+    };
+    [key: string]: unknown;
+  }
+
+  /** 当前绑定的 K 线数据（ChartData）。Data 是 HistoryData 数组，DataOffset 是
+   *  视图窗口起始下标（0 = 从最早一根开始看）。 */
+  export interface HQChartData {
+    Data?: HQHistoryData[];
+    DataOffset?: number;
     [key: string]: unknown;
   }
 
