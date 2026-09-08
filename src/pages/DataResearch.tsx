@@ -161,7 +161,21 @@ function MarketSection({
                       <span className="dresearch-no">{i + 1}</span>
                     </td>
                     <td className="dresearch-name">
-                      <strong>{s.name}</strong>
+                      <strong>
+                        {s.url ? (
+                          <a
+                            className="dresearch-name-link"
+                            href={s.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={s.url}
+                          >
+                            {s.name}
+                          </a>
+                        ) : (
+                          s.name
+                        )}
+                      </strong>
                       <span className={`dresearch-role ${ROLE_CLS[s.role]}`}>{s.role}</span>
                       {s.accessNote && <p className="dresearch-accessnote">{s.accessNote}</p>}
                     </td>

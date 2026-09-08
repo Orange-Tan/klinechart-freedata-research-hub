@@ -35,6 +35,8 @@ export const ACCESS_META: Record<AccessKind, { label: string; cls: string; title
 export interface DataSourceInfo {
   id: string;
   name: string;
+  /** 官网 / 开源仓库链接（数据源名称点击直达） */
+  url?: string;
   market: MarketId;
   /** 定位：主源 / 备选 / 参考 / 排除 */
   role: '主源' | '备选' | '参考' | '排除';
@@ -69,6 +71,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-eastmoney',
     name: '东方财富 push2his/push2delay',
+    url: 'https://quote.eastmoney.com/',
     market: 'astock',
     role: '主源',
     score: 92,
@@ -85,6 +88,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-tencent',
     name: '腾讯 web.ifzq / qt.gtimg.cn',
+    url: 'https://gu.qq.com/',
     market: 'astock',
     role: '备选',
     score: 82,
@@ -100,6 +104,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-tradingview',
     name: 'TradingView 行情扫描器',
+    url: 'https://www.tradingview.com/',
     market: 'astock',
     role: '参考',
     score: 66,
@@ -116,6 +121,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-tdx',
     name: '通达信 TDX（TdxHq 行情）',
+    url: 'https://www.tdx.com.cn/',
     market: 'astock',
     role: '参考',
     score: 68,
@@ -131,6 +137,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-baostock',
     name: 'Baostock',
+    url: 'http://baostock.com/',
     market: 'astock',
     role: '参考',
     score: 70,
@@ -146,6 +153,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-sina',
     name: '新浪财经（快照）',
+    url: 'https://finance.sina.com.cn/',
     market: 'astock',
     role: '备选',
     score: 62,
@@ -161,6 +169,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-akshare',
     name: 'AKShare（stock_zh_a_hist 等）',
+    url: 'https://akshare.akfamily.xyz/',
     market: 'astock',
     role: '参考',
     score: 76,
@@ -176,6 +185,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-tvdatafeed',
     name: 'tvDatafeed（TradingView 全周期）',
+    url: 'https://github.com/rongardF/tvdatafeed',
     market: 'astock',
     role: '参考',
     score: 62,
@@ -191,21 +201,23 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-tushare',
     name: 'Tushare Pro',
+    url: 'https://tushare.pro/',
     market: 'astock',
     role: '参考',
     score: 56,
     tags: ['需Key', '积分制', '稳定'],
     access: ['key', 'proxy'],
-    accessNote: '需注册 token；120 分仅日线不复权；浏览器无法直连需后端',
+    accessNote: '需注册 token；120 分仅日线不复权（复权/分钟/财务需 2000+ 分）；浏览器无法直连需后端',
     history: '日线上市以来全量',
-    realtime: '日终更新',
+    realtime: 'T+0 日收盘后更新（非实时）',
     limits: '120 分档 50 次/分、8000 次/日；积分一年有效期',
-    reason: '数据最稳但免费档逐年收紧，对纯前端项目偏重',
+    reason: '数据最稳但免费档逐年收紧，仅日终场景；对纯前端项目偏重',
     checkNote: '需 token + 后端',
   },
   {
     id: 'astock-exchange',
     name: '沪深交易所官网',
+    url: 'https://www.sse.com.cn/',
     market: 'astock',
     role: '参考',
     score: 42,
@@ -222,6 +234,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'astock-ths',
     name: '同花顺 iFinD / 问财',
+    url: 'https://www.10jqka.com.cn/',
     market: 'astock',
     role: '排除',
     score: 18,
@@ -239,6 +252,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-twelve-data',
     name: 'Twelve Data',
+    url: 'https://twelvedata.com/',
     market: 'us',
     role: '主源',
     score: 88,
@@ -254,6 +268,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-yahoo',
     name: 'Yahoo Finance chart',
+    url: 'https://finance.yahoo.com/',
     market: 'us',
     role: '主源',
     score: 84,
@@ -269,6 +284,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-sina',
     name: '新浪财经美股日K',
+    url: 'https://finance.sina.com.cn/',
     market: 'us',
     role: '备选',
     score: 76,
@@ -284,6 +300,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-finnhub',
     name: 'Finnhub',
+    url: 'https://finnhub.io/',
     market: 'us',
     role: '备选',
     score: 68,
@@ -299,6 +316,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-alpha-vantage',
     name: 'Alpha Vantage',
+    url: 'https://www.alphavantage.co/',
     market: 'us',
     role: '参考',
     score: 52,
@@ -314,6 +332,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-tiingo',
     name: 'Tiingo',
+    url: 'https://www.tiingo.com/',
     market: 'us',
     role: '参考',
     score: 50,
@@ -329,6 +348,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-tradingview',
     name: 'TradingView 行情扫描器',
+    url: 'https://www.tradingview.com/',
     market: 'us',
     role: '参考',
     score: 66,
@@ -345,6 +365,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-akshare',
     name: 'AKShare（stock_us_daily 等）',
+    url: 'https://akshare.akfamily.xyz/',
     market: 'us',
     role: '参考',
     score: 60,
@@ -360,6 +381,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-tvdatafeed',
     name: 'tvDatafeed（TradingView 全周期）',
+    url: 'https://github.com/rongardF/tvdatafeed',
     market: 'us',
     role: '参考',
     score: 64,
@@ -375,6 +397,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-stooq',
     name: 'Stooq',
+    url: 'https://stooq.com/',
     market: 'us',
     role: '排除',
     score: 28,
@@ -390,6 +413,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-iex',
     name: 'IEX Cloud',
+    url: 'https://iexcloud.io/',
     market: 'us',
     role: '排除',
     score: 10,
@@ -405,6 +429,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'us-nasdaq',
     name: 'Nasdaq Data Link / Quandl',
+    url: 'https://data.nasdaq.com/',
     market: 'us',
     role: '排除',
     score: 20,
@@ -422,6 +447,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-binance',
     name: 'Binance',
+    url: 'https://www.binance.com/',
     market: 'crypto',
     role: '主源',
     score: 96,
@@ -437,6 +463,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-okx',
     name: 'OKX',
+    url: 'https://www.okx.com/',
     market: 'crypto',
     role: '主源',
     score: 91,
@@ -452,6 +479,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-bybit',
     name: 'Bybit',
+    url: 'https://www.bybit.com/',
     market: 'crypto',
     role: '主源',
     score: 85,
@@ -467,6 +495,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-gate',
     name: 'Gate.io',
+    url: 'https://www.gate.com/',
     market: 'crypto',
     role: '备选',
     score: 76,
@@ -482,6 +511,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-htx',
     name: 'HTX（原火币）',
+    url: 'https://www.htx.com/',
     market: 'crypto',
     role: '备选',
     score: 70,
@@ -497,6 +527,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-bitget',
     name: 'Bitget',
+    url: 'https://www.bitget.com/',
     market: 'crypto',
     role: '备选',
     score: 68,
@@ -512,6 +543,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-ccxt',
     name: 'ccxt（聚合）',
+    url: 'https://github.com/ccxt/ccxt',
     market: 'crypto',
     role: '参考',
     score: 62,
@@ -527,6 +559,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-kraken',
     name: 'Kraken',
+    url: 'https://www.kraken.com/',
     market: 'crypto',
     role: '参考',
     score: 58,
@@ -542,6 +575,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-coingecko',
     name: 'CoinGecko',
+    url: 'https://www.coingecko.com/',
     market: 'crypto',
     role: '参考',
     score: 52,
@@ -557,6 +591,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-tradingview',
     name: 'TradingView 行情扫描器',
+    url: 'https://www.tradingview.com/',
     market: 'crypto',
     role: '参考',
     score: 66,
@@ -573,6 +608,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-akshare',
     name: 'AKShare（crypto 快照聚合）',
+    url: 'https://akshare.akfamily.xyz/',
     market: 'crypto',
     role: '参考',
     score: 40,
@@ -588,6 +624,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-coinmarketcap',
     name: 'CoinMarketCap',
+    url: 'https://coinmarketcap.com/',
     market: 'crypto',
     role: '排除',
     score: 22,
@@ -603,6 +640,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-cryptocompare',
     name: 'CryptoCompare',
+    url: 'https://www.cryptocompare.com/',
     market: 'crypto',
     role: '排除',
     score: 20,
@@ -618,6 +656,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'crypto-coincap',
     name: 'CoinCap',
+    url: 'https://coincap.io/',
     market: 'crypto',
     role: '排除',
     score: 20,
@@ -635,6 +674,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-yahoo',
     name: 'Yahoo Finance（CL=F 等）',
+    url: 'https://finance.yahoo.com/',
     market: 'futures',
     role: '主源',
     score: 86,
@@ -650,6 +690,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-sina',
     name: '新浪期货（RB0 主力连续）',
+    url: 'https://finance.sina.com.cn/futures/',
     market: 'futures',
     role: '主源',
     score: 84,
@@ -665,6 +706,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-shfe',
     name: 'SHFE/INE 官方 EOD',
+    url: 'https://www.shfe.com.cn/',
     market: 'futures',
     role: '备选',
     score: 72,
@@ -680,6 +722,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-cffex',
     name: 'CFFEX 官方 CSV',
+    url: 'https://www.cffex.com.cn/',
     market: 'futures',
     role: '备选',
     score: 70,
@@ -695,6 +738,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-sina-global',
     name: '新浪海外期货 hf_*',
+    url: 'https://finance.sina.com.cn/futures/',
     market: 'futures',
     role: '备选',
     score: 68,
@@ -710,6 +754,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-tradingview',
     name: 'TradingView 行情扫描器',
+    url: 'https://www.tradingview.com/',
     market: 'futures',
     role: '参考',
     score: 66,
@@ -726,6 +771,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-akshare',
     name: 'AKShare（futures_zh_spot 等）',
+    url: 'https://akshare.akfamily.xyz/',
     market: 'futures',
     role: '参考',
     score: 58,
@@ -741,6 +787,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-dce',
     name: 'DCE（大连商品交易所）',
+    url: 'https://www.dce.com.cn/',
     market: 'futures',
     role: '排除',
     score: 30,
@@ -757,6 +804,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-czce',
     name: 'CZCE（郑州商品交易所）',
+    url: 'https://www.czce.com.cn/',
     market: 'futures',
     role: '排除',
     score: 28,
@@ -772,6 +820,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-cme',
     name: 'CME 官网',
+    url: 'https://www.cmegroup.com/',
     market: 'futures',
     role: '排除',
     score: 35,
@@ -787,6 +836,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-quandl',
     name: 'Quandl（CHRIS/CME）',
+    url: 'https://www.nasdaq.com/data-company/quandl',
     market: 'futures',
     role: '排除',
     score: 22,
@@ -802,6 +852,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'futures-stooq',
     name: 'Stooq（期货）',
+    url: 'https://stooq.com/',
     market: 'futures',
     role: '排除',
     score: 22,
@@ -819,6 +870,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-eastmoney-lsjz',
     name: '天天基金 api.fund lsjz（场外净值）',
+    url: 'https://fund.eastmoney.com/',
     market: 'fund',
     role: '主源',
     score: 86,
@@ -834,6 +886,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-eastmoney-etf',
     name: '东财 push2his（场内 ETF）',
+    url: 'https://quote.eastmoney.com/',
     market: 'fund',
     role: '主源',
     score: 83,
@@ -850,6 +903,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-eastmoney-js',
     name: '天天基金 pingzhongdata（JS）',
+    url: 'https://fund.eastmoney.com/',
     market: 'fund',
     role: '主源',
     score: 78,
@@ -865,6 +919,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-yahoo',
     name: 'Yahoo Finance（美国 ETF）',
+    url: 'https://finance.yahoo.com/',
     market: 'fund',
     role: '主源',
     score: 75,
@@ -880,6 +935,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-sec',
     name: 'SEC EDGAR（美国基金持仓）',
+    url: 'https://www.sec.gov/',
     market: 'fund',
     role: '参考',
     score: 66,
@@ -895,6 +951,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-sina-etf',
     name: '新浪 quotes.sina.cn（ETF）',
+    url: 'https://finance.sina.com.cn/fund/',
     market: 'fund',
     role: '备选',
     score: 58,
@@ -910,6 +967,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-tradingview',
     name: 'TradingView 行情扫描器',
+    url: 'https://www.tradingview.com/',
     market: 'fund',
     role: '参考',
     score: 60,
@@ -926,6 +984,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-akshare',
     name: 'AKShare（基金/ETF）',
+    url: 'https://akshare.akfamily.xyz/',
     market: 'fund',
     role: '参考',
     score: 55,
@@ -941,6 +1000,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-danjuan',
     name: '蛋卷 / 雪球',
+    url: 'https://danjuanfunds.com/',
     market: 'fund',
     role: '排除',
     score: 42,
@@ -956,6 +1016,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-csindex',
     name: '中证指数官网',
+    url: 'https://www.csindex.com.cn/',
     market: 'fund',
     role: '排除',
     score: 36,
@@ -971,6 +1032,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-exchange',
     name: '沪深交易所（ETF）',
+    url: 'https://www.sse.com.cn/',
     market: 'fund',
     role: '排除',
     score: 34,
@@ -986,6 +1048,7 @@ export const SOURCES: DataSourceInfo[] = [
   {
     id: 'fund-morningstar',
     name: '晨星 Morningstar',
+    url: 'https://www.morningstar.com/',
     market: 'fund',
     role: '排除',
     score: 28,

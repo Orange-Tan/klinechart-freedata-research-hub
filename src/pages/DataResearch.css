@@ -121,6 +121,24 @@
   font-size: 13px;
 }
 
+/* 名称列：有官网/仓库链接的源，点击名称可直达 */
+.dresearch-name-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.dresearch-name-link::after {
+  content: ' ↗';
+  font-size: 10px;
+  opacity: 0.55;
+  vertical-align: 2px;
+}
+.dresearch-name-link:hover {
+  color: #26a69a;
+  border-bottom-color: #26a69a;
+}
+
 .dresearch-role {
   display: inline-block;
   margin-left: 8px;
