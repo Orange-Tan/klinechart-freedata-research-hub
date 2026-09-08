@@ -96,3 +96,4 @@ App (src/App.tsx)  ── 侧边栏切页 ──►  Dashboard (src/pages/Dashbo
 
 - `docs/图表库调研报告.md`：选型调研报告（stars/协议/维护状态、四大库优劣势），涉及选型决策时先看它。
 - `src/pages/ResearchReport.tsx`：同一调研报告的页面化版本（数据与文档保持一致，改一处需同步另一处）。
+- `docs/免费行情数据源调研报告.md`：A股/美股/加密货币/期货/基金五大类免费数据源调研（推荐序/实测现状/CORS 分析/各市场接入建议），涉及给 `src/data/` 新增数据源前先看它。
