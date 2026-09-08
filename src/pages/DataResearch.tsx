@@ -70,8 +70,7 @@ export function DataResearch() {
           <div>
             <h1>数据源调研</h1>
             <p className="report-sub">
-              五大类免费行情数据源 · 按品种分类、按综合评分排序 · 数据整理自{' '}
-              <code className="dresearch-code">docs/免费行情数据源调研报告.md</code>（2026-09 实测）
+              五大类免费行情数据源 · 按品种分类、按综合评分排序 · 数据来源全网收集，更新日期 2026-09
             </p>
           </div>
           <button

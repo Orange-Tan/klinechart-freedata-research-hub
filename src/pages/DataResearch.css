@@ -36,15 +36,6 @@
   cursor: not-allowed;
 }
 
-.dresearch-code {
-  background: #161c2c;
-  border: 1px solid #2b3245;
-  border-radius: 5px;
-  padding: 1px 6px;
-  font-size: 12px;
-  color: #7aa2f7;
-}
-
 .dresearch-legend {
   display: flex;
   flex-wrap: wrap;
