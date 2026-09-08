@@ -30,13 +30,6 @@ export default function App() {
         >
           <span>{sidebarOpen ? '«' : '»'}</span>
         </button>
-        <div className="sidebar-title">
-          <span className="sidebar-logo">📈</span>
-          <div>
-            <h1>K 线图开源库综合对比</h1>
-            <p>4 库同源实时对比平台</p>
-          </div>
-        </div>
         <nav className="sidebar-nav">
           {PAGES.map(({ id, label, icon }) => (
             <button
@@ -46,7 +39,7 @@ export default function App() {
               onClick={() => setPage(id)}
             >
               <span className="sidebar-icon">{icon}</span>
-              {label}
+              <span className="sidebar-label">{label}</span>
             </button>
           ))}
         </nav>
