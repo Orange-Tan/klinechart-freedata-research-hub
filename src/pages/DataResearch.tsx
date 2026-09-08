@@ -70,7 +70,7 @@ export function DataResearch() {
           <div>
             <h1>数据源调研</h1>
             <p className="report-sub">
-              五大类免费行情数据源 · 按品种分类、按综合评分排序 · 数据来源全网收集，更新日期 2026-09
+              五大类免费行情数据源 · 按品种分类 · 数据来源全网收集，更新日期 2026-09
             </p>
           </div>
           <button
@@ -149,39 +149,42 @@ function MarketSection({
             </tr>
           </thead>
           <tbody>
-            {list.map((s, i) => {
-              const r = results[s.id];
-              return (
-                <tr key={s.id}>
-                  <td className="dresearch-rank">
-                    <span className={`dresearch-score score-${scoreBand(s.score)}`}>{s.score}</span>
-                    <span className="dresearch-no">{i + 1}</span>
-                  </td>
-                  <td className="dresearch-name">
-                    <strong>{s.name}</strong>
-                    <span className={`dresearch-role ${ROLE_CLS[s.role]}`}>{s.role}</span>
-                    {s.accessNote && <p className="dresearch-accessnote">{s.accessNote}</p>}
-                  </td>
-                  <td>{s.history}</td>
-                  <td>{s.realtime}</td>
-                  <td className="dresearch-limits">{s.limits}</td>
-                  <td className="dresearch-access">
-                    <div className="dresearch-tags">
-                      {s.access.length === 0 && <span className="ab-none">不适用</span>}
-                      {s.access.map((a) => (
-                        <span key={a} className={`ab ${ACCESS_META[a].cls}`} title={ACCESS_META[a].title}>
-                          {ACCESS_META[a].label}
-                        </span>
-                      ))}
-                    </div>
-                    {s.reason && <p className="dresearch-reason">{s.reason}</p>}
-                  </td>
-                  <td>
-                    <CheckCell src={s} r={r} onCheck={onCheck} />
-                  </td>
-                </tr>
-              );
-            })}
+            {list
+              .map((s, i) => ({ s, i }))
+              // 无历史 K 线（history 以「无历史」开头）的源排到末尾，保持注册表内的相对顺序
+              .sort((a, b) => Number(a.s.history.startsWith('无历史')) - Number(b.s.history.startsWith('无历史')))
+              .map(({ s, i }) => {
+                const r = results[s.id];
+                return (
+                  <tr key={s.id}>
+                    <td className="dresearch-rank">
+                      <span className="dresearch-no">{i + 1}</span>
+                    </td>
+                    <td className="dresearch-name">
+                      <strong>{s.name}</strong>
+                      <span className={`dresearch-role ${ROLE_CLS[s.role]}`}>{s.role}</span>
+                      {s.accessNote && <p className="dresearch-accessnote">{s.accessNote}</p>}
+                    </td>
+                    <td>{s.history}</td>
+                    <td>{s.realtime}</td>
+                    <td className="dresearch-limits">{s.limits}</td>
+                    <td className="dresearch-access">
+                      <div className="dresearch-tags">
+                        {s.access.length === 0 && <span className="ab-none">不适用</span>}
+                        {s.access.map((a) => (
+                          <span key={a} className={`ab ${ACCESS_META[a].cls}`} title={ACCESS_META[a].title}>
+                            {ACCESS_META[a].label}
+                          </span>
+                        ))}
+                      </div>
+                      {s.reason && <p className="dresearch-reason">{s.reason}</p>}
+                    </td>
+                    <td>
+                      <CheckCell src={s} r={r} onCheck={onCheck} />
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
@@ -225,10 +228,4 @@ function CheckCell({
       {r?.detail && <span className="check-detail">{r.detail}</span>}
     </div>
   );
-}
-
-function scoreBand(score: number): 'high' | 'mid' | 'low' {
-  if (score >= 80) return 'high';
-  if (score >= 55) return 'mid';
-  return 'low';
 }

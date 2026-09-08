@@ -32,12 +32,12 @@ test('数据调研页渲染 + 一键检测连通性', async ({ page }) => {
     expect(t).toMatch(/市场/);
   }
 
-  // 4. 表头与数据源行：各区块至少 1 行，且行内出现综合评分与角色徽标
+  // 4. 表头与数据源行：各区块至少 1 行，且行内出现角色徽标与序号
   for (const section of await sections.all()) {
     const rows = section.locator('tbody tr');
     const n = await rows.count();
     expect(n).toBeGreaterThanOrEqual(1);
-    await expect(rows.first().locator('.dresearch-score')).toBeVisible();
+    await expect(rows.first().locator('.dresearch-no')).toBeVisible();
     await expect(rows.first().locator('.dresearch-role')).toBeVisible();
   }
 

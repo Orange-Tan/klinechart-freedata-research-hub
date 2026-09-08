@@ -110,31 +110,6 @@
   gap: 6px;
 }
 
-.dresearch-score {
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 5px;
-  padding: 1px 5px;
-}
-
-.score-high {
-  color: #26a69a;
-  background: #26a69a1a;
-  border: 1px solid #26a69a40;
-}
-
-.score-mid {
-  color: #e0af68;
-  background: #e0af6818;
-  border: 1px solid #e0af6840;
-}
-
-.score-low {
-  color: #8b949e;
-  background: #161c2c;
-  border: 1px solid #2b3245;
-}
-
 .dresearch-no {
   color: #4a5568;
   font-size: 12px;
