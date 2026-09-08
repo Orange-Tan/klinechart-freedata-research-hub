@@ -110,6 +110,7 @@
 .row-ex td {
   opacity: 0.55;
 }
+/* 说明：role='排除' 与不含实时行情的源默认已从表格隐藏（DataResearch.tsx isShown 过滤） */
 
 /* 排名列 */
 .dresearch-rank {

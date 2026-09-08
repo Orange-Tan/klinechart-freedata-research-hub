@@ -16,6 +16,27 @@ const ROLE_CLS: Record<DataSourceInfo['role'], string> = {
   排除: 'role-ex',
 };
 
+/**
+ * 是否具备可用实时行情（决定是否在表格中展示）：
+ * 排除的数据源（已停服/反爬墙/需登录 cookie 等）与不含盘中/当日实时行情的源（日终/季度/缓存等）不展示。
+ */
+const NON_REALTIME: Set<string> = new Set([
+  '无',
+  '—',
+  '无盘中',
+  '日终更新',
+  '日终',
+  '季度',
+  '缓存数据',
+]);
+
+function isShown(src: DataSourceInfo): boolean {
+  if (src.role === '排除') return false;
+  return !NON_REALTIME.has(src.realtime);
+}
+
+const shownSources = SOURCES.filter(isShown);
+
 export function DataResearch() {
   const [results, setResults] = useState<Record<string, CheckResult>>({});
   const [running, setRunning] = useState(false);
@@ -31,7 +52,7 @@ export function DataResearch() {
   async function runAll() {
     if (running) return;
     setRunning(true);
-    const checkable = SOURCES.filter((s) => s.checkUrl);
+    const checkable = shownSources.filter((s) => s.checkUrl);
     // 先统一置为 checking
     setResults((prev) => {
       const next = { ...prev };
@@ -105,7 +126,7 @@ function MarketSection({
   results: Record<string, CheckResult>;
   onCheck: (src: DataSourceInfo) => void;
 }) {
-  const list = SOURCES.filter((s) => s.market === market.id);
+  const list = shownSources.filter((s) => s.market === market.id);
   const summary = MARKET_SUMMARY[market.id];
   return (
     <section className="report-section dresearch-section" data-market={market.id}>
@@ -132,7 +153,7 @@ function MarketSection({
             {list.map((s, i) => {
               const r = results[s.id];
               return (
-                <tr key={s.id} className={s.role === '排除' ? 'row-ex' : ''}>
+                <tr key={s.id}>
                   <td className="dresearch-rank">
                     <span className={`dresearch-score score-${scoreBand(s.score)}`}>{s.score}</span>
                     <span className="dresearch-no">{i + 1}</span>
