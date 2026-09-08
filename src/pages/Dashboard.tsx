@@ -72,7 +72,9 @@ const SOURCE_DEFAULTS: Record<
   },
 };
 
-const HISTORY_LIMIT = 300;
+/** 历史 K 线数量档位（顶部工具栏可切换，默认 300） */
+const HISTORY_LIMITS = [100, 300, 500, 1000] as const;
+const DEFAULT_HISTORY_LIMIT = 300;
 
 /** 防抖：等待静默期后才触发搜索请求 */
 function useDebounced<T>(value: T, delay = 300): T {
@@ -95,6 +97,7 @@ export function Dashboard() {
   const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
   const [period, setPeriod] = useState<KlinePeriod>('1d');
   const [live, setLive] = useState(true);
+  const [historyLimit, setHistoryLimit] = useState<number>(DEFAULT_HISTORY_LIMIT);
 
   const source = useMemo(() => getDataSource(sourceId), [sourceId]);
   const [history, setHistory] = useState<OHLCV[]>([]);
@@ -167,7 +170,7 @@ export function Dashboard() {
 
     // 立即加载历史
     source
-      .fetchKlines(symbol, period, HISTORY_LIMIT)
+      .fetchKlines(symbol, period, historyLimit)
       .then((bars) => {
         if (cancelled) return;
         historyLoaded = true;
@@ -194,9 +197,9 @@ export function Dashboard() {
           } else {
             next = [...prev, bar];
           }
-          // 裁剪最老的一根，保持列表稳定（HISTORY_LIMIT 根），避免无限增长把图压扁
-          if (next.length > HISTORY_LIMIT) {
-            next = next.slice(next.length - HISTORY_LIMIT);
+          // 裁剪最老的一根，保持列表稳定（historyLimit 根），避免无限增长把图压扁
+          if (next.length > historyLimit) {
+            next = next.slice(next.length - historyLimit);
           }
           return next;
         });
@@ -207,7 +210,7 @@ export function Dashboard() {
       cancelled = true;
       unsubscribe?.();
     };
-  }, [source, symbol, period, live]);
+  }, [source, symbol, period, live, historyLimit]);
 
   return (
     <div className="dashboard">
@@ -247,6 +250,19 @@ export function Dashboard() {
           <label className="live-toggle">
             <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
             实时更新
+          </label>
+          <label>
+            历史 K 线
+            <select
+              value={historyLimit}
+              onChange={(e) => setHistoryLimit(Number(e.target.value))}
+            >
+              {HISTORY_LIMITS.map((n) => (
+                <option key={n} value={n}>
+                  {n} 根
+                </option>
+              ))}
+            </select>
           </label>
           <div className="stock-search">
             <input

@@ -25,9 +25,10 @@ test('4 图表库渲染，默认上证指数，搜索 A 股与切换周期/数�
 
   const counts = page.locator('.bars-count');
 
-  // 默认：腾讯财经 + 上证指数
+  // 默认：腾讯财经 + 上证指数 + 历史 K 线 300 根
   await expect(page.locator('label:has-text("数据源") select')).toHaveValue('tencent');
   await expect(page.locator('label:has-text("标的") select')).toHaveValue('sh000001');
+  await expect(page.locator('label:has-text("历史 K 线") select')).toHaveValue('300');
   // 顶部不再显示状态徽章（数据源/标的/图表库数量标签已移除），改为断言侧边栏徽标
   await expect(page.locator('.sidebar-item').filter({ hasText: '多图对比' })).toBeVisible();
 
@@ -71,6 +72,32 @@ test('4 图表库渲染，默认上证指数，搜索 A 股与切换周期/数�
   const sourceSel = page.locator('label:has-text("数据源") select');
   await sourceSel.selectOption('binance');
   await expect(page.locator('label:has-text("标的") select')).toHaveValue('BTCUSDT');
+  await expect
+    .poll(async () => {
+      const texts = await counts.allTextContents();
+      return texts.length === 4 && texts.every((t) => parseInt(t, 10) >= MIN_BARS);
+    })
+    .toBe(true);
+  await expect(page.locator('.error-panel')).toHaveCount(0);
+
+  // 历史 K 线数量：切到 100 根 → 重拉取后 bars-count 恰好 ≤ 100；再切回 300 → 重新补满
+  const limitSel = page.locator('label:has-text("历史 K 线") select');
+  await limitSel.selectOption('100');
+  await expect
+    .poll(async () => {
+      const texts = await counts.allTextContents();
+      return (
+        texts.length === 4 &&
+        texts.every((t) => {
+          const n = parseInt(t, 10);
+          return n >= 90 && n <= 100; // 100 根 + 实时追加 1 根容差
+        })
+      );
+    })
+    .toBe(true);
+  await expect(page.locator('.error-panel')).toHaveCount(0);
+
+  await limitSel.selectOption('300');
   await expect
     .poll(async () => {
       const texts = await counts.allTextContents();
