@@ -52,9 +52,9 @@ export default function App() {
         </nav>
         <div className="sidebar-foot">数据源：Binance 公开 API</div>
       </aside>
-      <main className="main">
+      <div className="main">
         {page === 'dashboard' ? <Dashboard /> : <ResearchReport />}
-      </main>
+      </div>
     </div>
   );
 }

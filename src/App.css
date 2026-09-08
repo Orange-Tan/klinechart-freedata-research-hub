@@ -185,6 +185,14 @@ body {
   border-bottom: 1px solid #1c2333;
 }
 
+.toolbar h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e8ecf3;
+  white-space: nowrap;
+}
+
 .controls {
   display: flex;
   flex-wrap: wrap;

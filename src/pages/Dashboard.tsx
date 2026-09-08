@@ -41,6 +41,11 @@ export function Dashboard() {
   const [history, setHistory] = useState<OHLCV[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // 侧边栏切页会把本组件整体卸载，筛选状态随之丢失（回到默认 BTCUSDT/日线）。
+  // 这属于已知取舍：切页即停止 Binance 轮询、切回重新拉取，换来的数据保鲜
+  // 比保留筛选更符合"快速对比看板"的定位；若将来需要持久化，再考虑把状态
+  // 提升到 App 或 localStorage。
+
   // 历史数据 + 订阅：source/symbol/period 任一变化都重建
   useEffect(() => {
     let cancelled = false;
