@@ -26,13 +26,44 @@ body {
 
 /* ===== 侧边栏 ===== */
 .sidebar {
-  flex: 0 0 220px;
+  flex: 0 0 64px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   background: #111625;
   border-right: 1px solid #1c2333;
-  padding: 16px 12px;
-  gap: 20px;
+  padding: 14px 8px;
+  gap: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  /* 折叠态宽度 64px ⇄ 展开态 220px：文字/logo/说明/底部文案随宽度隐藏/显示 */
+  transition: flex-basis 0.2s ease;
+}
+
+.sidebar.open {
+  flex-basis: 220px;
+}
+
+/* 悬停展开按钮：折叠时占满顶部一行，展开时仅图标区可点 */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #8b949e;
+  font-size: 16px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-toggle:hover {
+  background: #1a2233;
+  color: #d7dbe4;
 }
 
 .sidebar-title {
@@ -64,6 +95,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 100%;
 }
 
 .sidebar-item {
@@ -105,6 +137,26 @@ body {
   font-size: 11px;
   color: #4a5568;
   padding: 0 4px;
+}
+
+/* 折叠态只保留图标与 logo，隐藏文字类内容 */
+.sidebar.collapsed .sidebar-title h1,
+.sidebar.collapsed .sidebar-title p,
+.sidebar.collapsed .sidebar-item span:not(.sidebar-icon),
+.sidebar.collapsed .sidebar-foot {
+  display: none;
+}
+
+/* 折叠态：点击整条只触发对应页，不因空白区域点不到（文本已隐藏） */
+.sidebar.collapsed .sidebar-item {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+/* 折叠态标题仅居中 logo */
+.sidebar.collapsed .sidebar-title {
+  justify-content: center;
+  padding: 0;
 }
 
 /* ===== 右侧内容区 ===== */

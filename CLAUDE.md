@@ -34,10 +34,17 @@ npx playwright test                  # 终端 2
 
 ## 架构
 
-数据流是单向的：数据源 → App 统一拉取 → 4 个图表适配组件各用自己的 API 消费。
+### 页面结构
+
+`App` 是 220px 侧边栏 + 右侧内容区的布局，`src/pages/` 下两个页面按侧边栏按钮切换，**切换时另一页面卸载/重挂载**（D 回后台即停止 Binance 轮询，切回重新拉取）：
+
+- `src/pages/Dashboard.tsx`：4 库同源实时对比看板（核心页面，数据拉取/订阅逻辑都在这里）
+- `src/pages/ResearchReport.tsx`：调研报告页（静态内容，样式在 `ResearchReport.css`）
+
+### 数据流（单向）
 
 ```
-App (src/App.tsx)
+App (src/App.tsx)  ── 侧边栏切页 ──►  Dashboard (src/pages/Dashboard.tsx)
  ├─ useFetchKlines effect  ──►  Binance REST /klines + 2s 轮询订阅
  ├─ setHistory(bars)  ──►  每个 <Comp> 收到 data={history}
  └─ LIBRARIES 注册表      （symbol / period / live 同源同步切给 4 库）
@@ -58,12 +65,12 @@ App (src/App.tsx)
 
 | 库 | 数据接入方式 | 已知陷阱 |
 |---|---|---|
-| **LightweightChart** | `setData` 全量 / `update()` 增量（按 `lastTimeRef` 判断整体替换或逐根追加） | 无 |
+| **LightweightChart** | `setData` 全量 / `update()` 增量（按 `lastTimeRef` 判断整体替换或逐根追加） | 时间戳须毫秒→秒（`UTCTimestamp`），否则日期漂到 57647 年；增量起点找不到（竞态/整体重置）要退化全量 |
 | **KLineChart** | v10 无公共增量接口，一切走 `setDataLoader`：`getBars('init')` 全量投喂，实时增量经 `subscribeBar` 回调（内部 `_addData('update')` 自动追加/替换） | DataLoader 必须**只注册一次**；`createIndicator` 每次调用都新增副图 pane 不去重，必须用 ref 防重，否则轮询会累积多个 VOL 窗口把主图挤成 0 高 |
-| **HQChart** | `NetworkFilter` 拦截内置 HTTP 请求（RequestHistoryData / ReqeustHistoryMinuteData），`PreventDefault` 后回调注入数据；实时用 `ManualUpdateKData` 推送 | `ChartDestroy()` 只清内部实例**不清理 DOM**；开发态 StrictMode 双挂载会叠出第二个实例画到容器外，mount effect cleanup 必须移除库生成的 `.jschart-drawing*` / `.jschart-tooltip` / `.UMyChart_*` 节点 |
-| **EChartsChart** | `setOption` 全量（`notMerge` 时替换）；增量靠 setOption 默认 merge 语义逐系列更新 | 无 |
+| **HQChart** | `NetworkFilter` 拦截内置 HTTP 请求（RequestHistoryData / ReqeustHistoryMinuteData），`PreventDefault` 后回调注入数据；实时用 `ManualUpdateKData` 推送 | `ChartDestroy()` 只清内部实例**不清理 DOM**；开发态 StrictMode 双挂载会叠出第二个实例画到容器外，mount effect cleanup 必须移除库生成的 `.jschart-drawing*` / `.jschart-tooltip` / `.UMyChart_*` 节点；`ManualUpdateKData` 要传 `DataOffset`；NetworkFilter 里对流股本（RequestFlowCapitalData）置 PreventDefault，否则库内兜底请求 127.0.0.1:8080 产生 console error |
+| **EChartsChart** | `setOption` 全量（`notMerge` 时替换）；增量靠 setOption 默认 merge 语义逐系列更新 | `XAXisOption` 等类型只能从 `echarts/types/dist/shared` 导入（type-only 不产生运行时代码，不影响按需打包）；category 轴增量时 data 要跟着推进 |
 
-### 状态管理（src/App.tsx）
+### 状态管理（src/pages/Dashboard.tsx）
 
 - `HISTORY_LIMIT = 300`：拉取 300 根，订阅回调里超出就裁剪最老一根，保持列表稳定。
 - symbol/period 切换：effect 先 `setHistory([])` 再重新拉取 → 各图表组件会先看到空数据，再收到新数据。KLineChart/HQChart 依赖这一时序，用 ref 持有最新数据供异步回调读取（**不能用闭包捕获，否则拿到过期值**）。
@@ -82,7 +89,10 @@ App (src/App.tsx)
 3. **HQChart `ManualUpdateKData` 必须显式传 `DataOffset`**，否则 `newDataCount` 恒为 0，视图冻结在最旧一侧。
 4. **各库周期常量不一致**：HQChart 的 Period 是 0/4/5/6/8/12（日/1m/5m/15m/1h/4h），需要映射；其它库周期直接透传。
 5. **ECharts type-only 导入**：`XAXisOption` 等类型只能从 `echarts/types/dist/shared` 导入（type-only 不产生运行时代码，不影响按需打包）。
+6. **lightweight-charts 时间戳单位**：`UTCTimestamp` 是秒，而 OHLCV.time 是毫秒，`toCandle`/`toVolume` 必须 `/1000` 转换。
+7. **lightweight-charts attribution 开关**：`layout.attributionLogo: false` 去掉了左下角 TradingView logo（已按库 NOTICE 在代码注释保留声明）。
 
 ## 文档
 
 - `docs/图表库调研报告.md`：选型调研报告（stars/协议/维护状态、四大库优劣势），涉及选型决策时先看它。
+- `src/pages/ResearchReport.tsx`：同一调研报告的页面化版本（数据与文档保持一致，改一处需同步另一处）。

@@ -16,10 +16,20 @@ const PAGES = [
 
 export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
+  // 侧边栏展开/折叠（默认展开；折叠后只显示图标，给图表区让出更多宽度）
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      <aside className={`sidebar${sidebarOpen ? ' open' : ' collapsed'}`}>
+        <button
+          type="button"
+          className="sidebar-toggle"
+          onClick={() => setSidebarOpen((v) => !v)}
+          title={sidebarOpen ? '收起侧边栏' : '展开侧边栏'}
+        >
+          <span>{sidebarOpen ? '«' : '»'}</span>
+        </button>
         <div className="sidebar-title">
           <span className="sidebar-logo">📈</span>
           <div>
