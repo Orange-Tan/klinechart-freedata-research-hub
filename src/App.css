@@ -26,22 +26,27 @@ body {
 
 /* ===== 侧边栏 ===== */
 .sidebar {
-  flex: 0 0 64px;
   display: flex;
   flex-direction: column;
-  align-items: center;
   background: #111625;
   border-right: 1px solid #1c2333;
   padding: 14px 8px;
   gap: 16px;
   overflow: hidden;
   white-space: nowrap;
-  /* 折叠态宽度 64px ⇄ 展开态 220px：文字/logo/说明/底部文案随宽度隐藏/显示 */
-  transition: flex-basis 0.2s ease;
+  /* 折叠态宽度 64px（只显示图标）；展开态宽度由内容撑开（自适应最宽条目） */
+  transition: width 0.2s ease;
 }
 
 .sidebar.open {
-  flex-basis: 220px;
+  width: max-content;
+  min-width: 0;
+  /* max-content 基于最长内容的理想宽度，再限制在合理范围内避免过宽 */
+  max-width: 300px;
+}
+
+.sidebar.collapsed {
+  width: 64px;
 }
 
 /* 悬停展开按钮：折叠时占满顶部一行，展开时仅图标区可点 */
@@ -139,24 +144,17 @@ body {
   padding: 0 4px;
 }
 
-/* 折叠态只保留图标与 logo，隐藏文字类内容 */
+/* 折叠态：标题仅居中 logo，导航只显图标，文字隐藏 */
+.sidebar.collapsed .sidebar-title {
+  justify-content: center;
+  padding: 0;
+}
+
 .sidebar.collapsed .sidebar-title h1,
 .sidebar.collapsed .sidebar-title p,
 .sidebar.collapsed .sidebar-item span:not(.sidebar-icon),
 .sidebar.collapsed .sidebar-foot {
   display: none;
-}
-
-/* 折叠态：点击整条只触发对应页，不因空白区域点不到（文本已隐藏） */
-.sidebar.collapsed .sidebar-item {
-  justify-content: center;
-  padding: 10px 0;
-}
-
-/* 折叠态标题仅居中 logo */
-.sidebar.collapsed .sidebar-title {
-  justify-content: center;
-  padding: 0;
 }
 
 /* ===== 右侧内容区 ===== */

@@ -10,8 +10,8 @@ type PageId = 'dashboard' | 'report';
  * 再切回来重新拉取（数据新鲜且不浪费请求）。
  */
 const PAGES = [
-  { id: 'dashboard', label: '图表快速对比', icon: '📊', Comp: Dashboard },
-  { id: 'report', label: '图表库调研报告', icon: '📖', Comp: ResearchReport },
+  { id: 'dashboard', label: '多图对比', icon: '📊', Comp: Dashboard },
+  { id: 'report', label: '图表调研', icon: '📖', Comp: ResearchReport },
 ] as const;
 
 export default function App() {
