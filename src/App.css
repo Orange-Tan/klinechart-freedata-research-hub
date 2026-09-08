@@ -26,6 +26,12 @@ body {
 
 /* ===== 侧边栏 ===== */
 .sidebar {
+  position: relative;
+  /* 让整个侧边栏成为层叠上下文并置顶：图表库自己会建层叠上下文
+     （如 lightweight/klinecharts 的 canvas position:absolute + z-index:1/2，
+     且位于 .main 内部、DOM 顺序靠后），若不在此级整体置顶，
+     折叠态悬浮气泡会被右侧图表 canvas 盖住 */
+  z-index: 300;
   display: flex;
   flex-direction: column;
   background: #111625;
@@ -49,6 +55,8 @@ body {
   width: 44px;
   padding-left: 4px;
   padding-right: 4px;
+  /* 折叠态允许悬浮提示溢出到右侧（图表区方向），不被侧边栏裁剪 */
+  overflow: visible;
 }
 
 /* 悬停展开按钮：折叠时占满顶部一行，展开时仅图标区可点 */
@@ -141,6 +149,30 @@ body {
   justify-content: center;
   padding: 10px 0;
   margin: 0;
+}
+
+/* ===== 折叠态图标悬浮提示 =====
+   由 App.tsx 用 portal 渲染真实 DOM 元素（fixed 定位 + z-index:99999，
+   portal 到 body 顶层），悬浮 1s 后显示。不用 CSS ::after 伪元素：
+   图表库的 canvas 自带 position:absolute + z-index:1/2，实测伪元素
+   会被 canvas 盖住画不出来，真实 DOM 元素能盖过。 */
+.sidebar-tooltip {
+  position: fixed;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  background: #e8ecf3; /* 亮底深字：气泡要叠在右侧图表区（黑色背景）之上 */
+  color: #0b0e17;
+  border: 1px solid #8b949e;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 99999;
+  /* 兜底：clip-path 强制该元素进入自己的合成层（composited layer），
+     避免极端情况下被页面其它合成层覆盖或截图漏掉 */
+  clip-path: inset(0 0 0 0);
 }
 
 /* ===== 右侧内容区 ===== */
