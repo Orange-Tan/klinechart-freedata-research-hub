@@ -15,19 +15,36 @@ export interface OHLCV {
 /** 周期枚举：与各库周期做映射时用 */
 export type KlinePeriod = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
 
+/** 股票搜索结果（顶部搜索框用） */
+export interface StockResult {
+  /** 统一符号：加密货币为 BTCUSDT 等，A 股为腾讯格式 sh600519 / sz000001 */
+  symbol: string;
+  /** 6 位代码，如 '000001' */
+  code: string;
+  /** 名称，如 '平安银行' */
+  name: string;
+  /** 类型：'股票' | '指数'（A 股），加密货币为 undefined */
+  type?: string;
+}
+
 /** 数据源适配器接口 —— 新增数据源只需实现该接口 */
 export interface KlineDataSource {
   readonly id: string;
   readonly label: string;
   /**
    * 拉取历史 K 线。
-   * @param symbol 交易对/代码，如 'BTCUSDT'
+   * @param symbol 交易对/代码，如 'BTCUSDT' 或 A 股 'sh000001'
    * @param period 周期
    * @param limit 数量上限
    */
   fetchKlines(symbol: string, period: KlinePeriod, limit: number): Promise<OHLCV[]>;
   /** 订阅实时 K 线（返回取消订阅函数） */
   subscribe?(symbol: string, period: KlinePeriod, onUpdate: (bar: OHLCV) => void): () => void;
+  /**
+   * 搜索标的（可选能力）。数据源若提供，顶部搜索框即对其可用。
+   * 未实现时搜索框只对内置标的列表过滤。
+   */
+  searchSymbols?(keyword: string): Promise<StockResult[]>;
 }
 
 /** 数据源错误 */

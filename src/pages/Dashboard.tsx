@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { OHLCV, KlinePeriod } from '../types/ohlcv';
+import type { OHLCV, KlinePeriod, StockResult } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
 import { LightweightChart } from '../components/charts/LightweightChart';
 import { KLineChart } from '../components/charts/KLineChart';
@@ -23,17 +23,76 @@ const PERIODS: { value: KlinePeriod; label: string }[] = [
   { value: '1d', label: '日线' },
 ];
 
-const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'] as const;
+/** 各数据源的默认标的面板（选中该源时展示的标的列表 + 默认选中） */
+const SOURCE_DEFAULTS: Record<
+  DataSourceId,
+  { symbol: string; label: string; options: { value: string; label: string }[] }
+> = {
+  binance: {
+    symbol: 'BTCUSDT',
+    label: 'BTCUSDT',
+    options: [
+      { value: 'BTCUSDT', label: 'BTCUSDT' },
+      { value: 'ETHUSDT', label: 'ETHUSDT' },
+      { value: 'BNBUSDT', label: 'BNBUSDT' },
+      { value: 'SOLUSDT', label: 'SOLUSDT' },
+      { value: 'XRPUSDT', label: 'XRPUSDT' },
+    ],
+  },
+  tencent: {
+    symbol: 'sh000001',
+    label: '上证指数',
+    options: [
+      { value: 'sh000001', label: '上证指数' },
+      { value: 'sz399001', label: '深证成指' },
+      { value: 'sh600519', label: '贵州茅台' },
+      { value: 'sz000001', label: '平安银行' },
+      { value: 'sz300750', label: '宁德时代' },
+    ],
+  },
+  eastmoney: {
+    symbol: 'sh000001',
+    label: '上证指数',
+    options: [
+      { value: 'sh000001', label: '上证指数' },
+      { value: 'sz399001', label: '深证成指' },
+      { value: 'sh600519', label: '贵州茅台' },
+      { value: 'sz000001', label: '平安银行' },
+      { value: 'sz300750', label: '宁德时代' },
+    ],
+  },
+  tdx: {
+    symbol: 'sh000001',
+    label: '上证指数',
+    options: [
+      { value: 'sh000001', label: '上证指数' },
+      { value: 'sz399001', label: '深证成指' },
+      { value: 'sh600519', label: '贵州茅台' },
+    ],
+  },
+};
 
 const HISTORY_LIMIT = 300;
+
+/** 防抖：等待静默期后才触发搜索请求 */
+function useDebounced<T>(value: T, delay = 300): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(value), delay);
+    return () => window.clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
 /**
  * 第 1 页：4 库同源实时 K 线快速对比看板。
  * 数据流单向：数据源 → 本组件统一拉取 → 4 个图表适配组件各用自己的 API 消费。
  */
 export function Dashboard() {
-  const [sourceId, setSourceId] = useState<DataSourceId>('binance');
-  const [symbol, setSymbol] = useState<string>(SYMBOLS[0]);
+  const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
+  const def = SOURCE_DEFAULTS[sourceId];
+  const [symbol, setSymbol] = useState<string>(def.symbol);
+  const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
   const [period, setPeriod] = useState<KlinePeriod>('1d');
   const [live, setLive] = useState(true);
 
@@ -41,8 +100,55 @@ export function Dashboard() {
   const [history, setHistory] = useState<OHLCV[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // 侧边栏切页会把本组件整体卸载，筛选状态随之丢失（回到默认 BTCUSDT/日线）。
-  // 这属于已知取舍：切页即停止 Binance 轮询、切回重新拉取，换来的数据保鲜
+  // 顶部搜索框状态
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounced(query, 300);
+  const [results, setResults] = useState<StockResult[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  // 切数据源时重置到该源的默认标的
+  function handleSourceChange(next: DataSourceId) {
+    const d = SOURCE_DEFAULTS[next];
+    setSourceId(next);
+    setSymbol(d.symbol);
+    setSymbolLabel(d.label);
+  }
+
+  // 搜索（仅支持搜索的源；TDX/无搜索能力时静默跳过）
+  useEffect(() => {
+    const kw = debouncedQuery.trim();
+    if (kw.length < 2 || !source.searchSymbols) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    source
+      .searchSymbols(kw)
+      .then((list) => {
+        if (!cancelled) setResults(list);
+      })
+      .catch(() => {
+        if (!cancelled) setResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSearching(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, source]);
+
+  function pickStock(r: StockResult) {
+    setSymbol(r.symbol);
+    setSymbolLabel(r.name);
+    setQuery('');
+    setResults([]);
+  }
+
+  // 侧边栏切页会把本组件整体卸载，筛选状态随之丢失（回到默认上证指数/日线）。
+  // 这属于已知取舍：切页即停止轮询、切回重新拉取，换来的数据保鲜
   // 比保留筛选更符合"快速对比看板"的定位；若将来需要持久化，再考虑把状态
   // 提升到 App 或 localStorage。
 
@@ -110,7 +216,7 @@ export function Dashboard() {
         <div className="controls">
           <label>
             数据源
-            <select value={sourceId} onChange={(e) => setSourceId(e.target.value as DataSourceId)}>
+            <select value={sourceId} onChange={(e) => handleSourceChange(e.target.value as DataSourceId)}>
               {dataSourceList.map((ds) => (
                 <option key={ds.id} value={ds.id}>
                   {ds.label}
@@ -119,11 +225,11 @@ export function Dashboard() {
             </select>
           </label>
           <label>
-            交易对
+            标的
             <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
-              {SYMBOLS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
+              {def.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
                 </option>
               ))}
             </select>
@@ -142,17 +248,39 @@ export function Dashboard() {
             <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
             实时更新
           </label>
+          <div className="stock-search">
+            <input
+              type="text"
+              className="stock-search-input"
+              placeholder="搜索 A 股股票/指数"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setResults([]);
+              }}
+            />
+            {searching && <span className="search-spinner">…</span>}
+            {results.length > 0 && (
+              <ul className="search-dropdown">
+                {results.map((r) => (
+                  <li key={r.symbol}>
+                    <button type="button" onClick={() => pickStock(r)}>
+                      <span className="search-name">{r.name}</span>
+                      <span className="search-symbol">{r.symbol}</span>
+                      {r.type && <span className="search-type">{r.type}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-        <div className="status">
-          <span className="badge">{LIBRARIES.length} 个图表库</span>
-          <span className="badge">{source.label}</span>
-          {error && <span className="error">数据源错误：{error}</span>}
-        </div>
+        {error && <span className="error">数据源错误：{error}</span>}
       </header>
 
       {error ? (
         <div className="error-panel">
-          无法加载 {symbol} {period} 数据：{error}
+          无法加载 {symbolLabel}（{symbol}） {period} 数据：{error}
         </div>
       ) : (
         <main className="grid">
@@ -160,7 +288,8 @@ export function Dashboard() {
             <section key={id} className="card">
               <header className="card-header">
                 <h2>{name}</h2>
-                <span className="bars-count">{history.length} bars</span>
+                {/* 视口隐藏的 bars 计数：纯渲染进度信号，供自动化测试读取，不占视觉空间 */}
+                <span className="sr-only bars-count">{history.length} bars</span>
               </header>
               <div className="chart-wrap">
                 <Comp data={history} symbol={symbol} period={period} live={live} />

@@ -45,7 +45,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot">数据源：Binance API</div>
+        <div className="sidebar-foot">数据源：腾讯财经 / 东方财富 / 通达信 / Binance</div>
       </aside>
       <div className="main">
         {page === 'dashboard' ? (

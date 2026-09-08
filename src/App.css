@@ -41,8 +41,7 @@ body {
 .sidebar.open {
   width: max-content;
   min-width: 0;
-  /* max-content 基于最长内容的理想宽度，再限制在合理范围内避免过宽 */
-  max-width: 240px;
+  /* 宽度只由导航条目文字决定（标题 + 内边距），不设 max-width 上限 */
 }
 
 /* 折叠态导航只留图标：条目压缩到刚好容纳 20px 图标 + 水平居中 */
@@ -123,6 +122,12 @@ body {
   font-size: 11px;
   color: #4a5568;
   padding: 0 4px;
+  /* 底部一行说明不参与侧边栏宽度计算（否则 max-content 会被它撑到 240px）；
+     按导航标题宽度截断省略 */
+  max-width: 112px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* 折叠态：导航只显图标，文字隐藏 */
@@ -204,6 +209,101 @@ body {
   accent-color: #26a69a;
 }
 
+/* ===== 顶部 A 股搜索框 ===== */
+.stock-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto; /* 搜索框靠右，与左侧控件区隔开 */
+}
+
+.stock-search-input {
+  width: 190px;
+  background: #0b0e17;
+  color: #d7dbe4;
+  border: 1px solid #2b3245;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.stock-search-input:focus {
+  border-color: #26a69a;
+}
+
+.stock-search-input::placeholder {
+  color: #4a5568;
+}
+
+.search-spinner {
+  position: absolute;
+  right: 8px;
+  color: #8b949e;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 320px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #161c2c;
+  border: 1px solid #2b3245;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 100;
+}
+
+.search-dropdown li {
+  margin: 0;
+}
+
+.search-dropdown button {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #d7dbe4;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-dropdown button:hover {
+  background: #1a2233;
+}
+
+.search-name {
+  font-weight: 600;
+  color: #e8ecf3;
+}
+
+.search-symbol {
+  color: #7aa2f7;
+  font-size: 12px;
+}
+
+.search-type {
+  margin-left: auto;
+  font-size: 11px;
+  color: #8b949e;
+  background: #1a2233;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
 .status {
   display: flex;
   align-items: center;
@@ -273,6 +373,20 @@ body {
 .bars-count {
   font-size: 12px;
   color: #6b7280;
+}
+
+/* 屏幕阅读器专用：占位但不可见（图表卡片上的 bars 计数用来做渲染进度信号，
+   用户不要看，测试/调试要读） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* 图表容器：所有库共用，占满卡片剩余空间 */
