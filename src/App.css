@@ -20,8 +20,106 @@ body {
 
 .app {
   display: flex;
-  flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  background: #111625;
+  border-right: 1px solid #1c2333;
+  padding: 16px 12px;
+  gap: 20px;
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.sidebar-logo {
+  font-size: 24px;
+}
+
+.sidebar-title h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8ecf3;
+  line-height: 1.3;
+}
+
+.sidebar-title p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #8b949e;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-item:hover {
+  background: #1a2233;
+  color: #d7dbe4;
+}
+
+.sidebar-item.active {
+  background: #26a69a1a;
+  color: #26a69a;
+  font-weight: 600;
+}
+
+.sidebar-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  font-size: 11px;
+  color: #4a5568;
+  padding: 0 4px;
+}
+
+/* ===== 右侧内容区 ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 /* 顶部工具栏 */
@@ -33,14 +131,6 @@ body {
   padding: 10px 16px;
   background: #111625;
   border-bottom: 1px solid #1c2333;
-}
-
-.toolbar h1 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #e8ecf3;
-  white-space: nowrap;
 }
 
 .controls {

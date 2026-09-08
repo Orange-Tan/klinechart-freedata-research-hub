@@ -1,0 +1,379 @@
+/* ===== 调研报告页 ===== */
+.report {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.report-header {
+  padding: 20px 28px;
+  background: #111625;
+  border-bottom: 1px solid #1c2333;
+}
+
+.report-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #e8ecf3;
+}
+
+.report-sub {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.report-body {
+  padding: 20px 28px 48px;
+  max-width: 1080px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.report-section h2 {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #e8ecf3;
+  padding-left: 10px;
+  border-left: 3px solid #26a69a;
+}
+
+.report-section h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #d7dbe4;
+}
+
+/* ===== 表格 ===== */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #1c2333;
+  border-radius: 10px;
+  background: #111625;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.report-table th {
+  padding: 10px 12px;
+  text-align: left;
+  background: #161c2c;
+  color: #8b949e;
+  font-weight: 600;
+  border-bottom: 1px solid #1c2333;
+  white-space: nowrap;
+}
+
+.report-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #141a28;
+  color: #b7bfcb;
+  vertical-align: top;
+}
+
+.report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.report-table tbody tr:hover {
+  background: #161d2e;
+}
+
+.lib-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lib-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.lib-tag {
+  font-style: normal;
+  font-size: 11px;
+  color: #26a69a;
+  background: #26a69a1a;
+  border: 1px solid #26a69a40;
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 6px;
+}
+
+.license {
+  color: #9ece6a;
+}
+
+.warn-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: #e0af68;
+  background: #e0af6818;
+  border: 1px solid #e0af6840;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.notice {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #2a2118;
+  border: 1px solid #5a4a2d;
+  border-radius: 8px;
+  color: #e0c08f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ===== 四大库详细卡片 ===== */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.detail-card {
+  background: #111625;
+  border: 1px solid #1c2333;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.detail-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: #e8ecf3;
+}
+
+.detail-card h3 em {
+  font-style: normal;
+  font-size: 11px;
+  color: #26a69a;
+  background: #26a69a1a;
+  border: 1px solid #26a69a40;
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: auto;
+}
+
+.detail-stars {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.detail-quote {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  background: #161d2e;
+  border-left: 3px solid #26a69a;
+  border-radius: 0 6px 6px 0;
+  color: #9aa4b2;
+  font-size: 13px;
+}
+
+.pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.pros-cons h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.pros h4 {
+  color: #26a69a;
+}
+
+.cons h4 {
+  color: #ef5350;
+}
+
+.pros-cons ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: #a9b3c1;
+  line-height: 1.55;
+}
+
+.pros-cons li + li {
+  margin-top: 4px;
+}
+
+.detail-fit {
+  margin: 0;
+  font-size: 13px;
+  color: #b7bfcb;
+  line-height: 1.5;
+}
+
+/* ===== 结论与分层架构 ===== */
+.conclusion-banner {
+  padding: 14px 18px;
+  background: #0d2420;
+  border: 1px solid #26a69a55;
+  border-radius: 10px;
+  color: #7fd8c9;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pick-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #111625;
+  border: 1px solid #1c2333;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.pick-num {
+  flex: 0 0 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #26a69a1a;
+  color: #26a69a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pick-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pick-head strong {
+  color: #e8ecf3;
+}
+
+.pick-role {
+  font-size: 12px;
+  color: #26a69a;
+  background: #26a69a1a;
+  border: 1px solid #26a69a40;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.pick-main p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #a9b3c1;
+  line-height: 1.6;
+}
+
+/* 分层架构图 */
+.layer-diagram {
+  background: #111625;
+  border: 1px solid #1c2333;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 4px 0 20px;
+}
+
+.layer-diagram h4 {
+  margin: 0 0 12px;
+}
+
+.layer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border: 1px solid #2b3245;
+  border-radius: 8px;
+  background: #161c2c;
+}
+
+.layer:last-child {
+  margin-bottom: 0;
+}
+
+.layer-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #d7dbe4;
+  white-space: nowrap;
+}
+
+.layer-detail {
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+.layer-base {
+  border-style: dashed;
+  background: #141a28;
+}
+
+.points-head {
+  margin-top: 4px;
+}
+
+.points-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  color: #b7bfcb;
+  line-height: 1.6;
+}
+
+/* 矩阵表加宽列 */
+.matrix-table th:not(:first-child),
+.matrix-table td:not(:first-child) {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrix-label {
+  font-weight: 600;
+  color: #d7dbe4;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
