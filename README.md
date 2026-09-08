@@ -1,0 +1,135 @@
+<div align="center">
+
+# 📈 KLineChart FreeData Research Hub
+
+**K 线图开源库综合对比平台 · 免费行情数据源调研中心**
+
+同一份**实时 K 线数据**，同源喂给 **4 个开源图表库**横向评测渲染与交互差异；
+并内置 **5 大市场免费数据源调研** 与 **一键连通性检测**。
+
+<sub>Vite + React 19 + TypeScript · Binance 实时行情 · Playwright 冒烟测试</sub>
+
+</div>
+
+---
+
+## ✨ 功能总览
+
+| 页面 | 说明 |
+|---|---|
+| 📊 **多图对比** | 同一份实时 K 线数据同源喂给 4 个库横向对比：渲染效果 / 交互差异 / 数据一致性 |
+| 📖 **图表调研** | 开源图表库选型调研报告（lightweight-charts / KLineChart / HQChart / ECharts / uPlot…），含功能矩阵、优缺点、技术路线建议 |
+| 📡 **数据调研** | A股 / 美股 / 加密货币 / 期货 / 基金 **五大市场 40 个免费数据源**按综合评分排序对比，**每源一键连通性检测 + 一键检测全部** |
+
+### 四大图表库
+
+| 库 | 渲染 | 特点 |
+|---|---|---|
+| **Lightweight-Charts** (TradingView) | Canvas | 金融图表事实标准，极轻量，行业范式 |
+| **KLineChart** | Canvas | 开箱即用，内置 20+ 指标 / 画线 / 周期切换 |
+| **HQChart** | Canvas | 通达信 / 麦语言脚本，多市场覆盖，A股最强 |
+| **Apache ECharts** | Canvas + SVG | 全能图表库之王，作为通用对照 |
+
+---
+
+## 🖼️ 页面预览
+
+**📊 多图对比 —— 4 库同源数据横向评测**
+
+![多图对比看板](docs/img/dashboard-compare.png)
+
+**📡 数据调研 —— 五大市场免费数据源 + 连通性检测**
+
+![数据调研页](docs/img/data-research.png)
+
+---
+
+## 🧭 目录导航
+
+```
+src/
+├── App.tsx                    # 侧边栏 + 三页切换（切页卸载/重挂载）
+├── pages/
+│   ├── Dashboard.tsx          # 📊 多图对比（Binance 轮询订阅主逻辑）
+│   ├── ResearchReport.tsx     # 📖 图表调研报告
+│   ├── DataResearch.tsx       # 📡 数据调研页（连通性检测）
+│   └── dataResearchData.ts    # 40 个数据源元数据注册表
+├── components/charts/         # 4 库图表适配层（踩坑重灾区）
+├── data/
+│   ├── binance.ts             # 数据源适配器：REST + 2s 轮询 + 竞态守卫
+│   ├── connectivity.ts        # 连通性检测：fetch / JSONP / 服务端库判定
+│   └── index.ts               # 数据源注册表
+└── types/ohlcv.ts             # 全项目统一协议 OHLCV
+docs/
+├── 图表库调研报告.md            # 选型调研（stars/协议/四大库优劣势）
+├── 免费行情数据源调研报告.md     # 五大市场免费数据源实测调研
+└── img/                        # README 预览图
+```
+
+**核心协议 `OHLCV`**：`{ time, open, high, low, close, volume }` —— 所有数据源适配器返回它，所有图表库适配器消费它。新增数据源只需实现 `KlineDataSource` 接口并在 `src/data/index.ts` 注册。
+
+---
+
+## 🚀 快速开始
+
+```bash
+npm install
+npm run dev          # http://localhost:5173
+```
+
+### 测试
+
+```bash
+npm run dev &        # 终端 1：dev server 需先跑在 5173
+npx playwright test  # 终端 2：冒烟测试
+```
+
+- `dashboard.spec.ts`：4 库渲染、切换交易对/周期同步刷新、无 console error
+- `datareport.spec.ts`：数据调研页渲染、一键检测全完成、无 pageerror
+
+---
+
+## 🛰️ 数据调研 & 连通性检测
+
+**五大市场免费数据源**（40 个，按综合评分排序，均实测）：
+
+| 市场 | 首选 | 备选 | 接入方式 |
+|---|---|---|---|
+| 🇨🇳 A股 | 东方财富 push2his | 腾讯 web.ifzq | 直连 · 限频 ≥2s |
+| 🇺🇸 美股 | Twelve Data | Yahoo（需外网+代理） | 免费 Key · 延时 |
+| 🪙 加密货币 | Binance（已接入） | OKX → Bybit | 直连 · 无 Key |
+| 📦 期货 | 新浪 RB0 / Yahoo CL=F | SHFE · CFFEX 官方 EOD | 需代理 |
+| 🏦 基金 | 天天基金（场外净值） | 东财 push2his（场内 ETF） | 代理 / 直连(不稳) |
+
+每个数据源标注**使用条件徽标**（直连 / 🌐 需外网 / 🔁 需代理 / JSONP / 🔑 需 Key / 服务端库），并支持：
+
+- **单源检测**：每行「检测」按钮
+- **一键检测全部**：顶部并发探测全部可直连源（8s 超时）
+- 检测三模式：`fetch` 直连（任一带 HTTP 响应即连通）/ `<script>` JSONP 注入 / 服务端库直接判定「不可直连」
+- 浏览器无法区分 CORS 拦截与网络不通，失败如实标注「被拦截（CORS 或网络不通）」
+- 无 CORS 头的源在开发环境走 Vite dev proxy（`/yh` `/kr` `/ttjj` `/shfe`）
+
+> 📖 完整实测细节见 [`docs/免费行情数据源调研报告.md`](docs/免费行情数据源调研报告.md)（推荐序 / 限频 / CORS 分析 / 各市场接入建议）
+
+---
+
+## 🧩 架构设计
+
+```
+App ── 侧边栏切页（卸载/重挂载）──► Dashboard
+ ├─ useFetchKlines effect ──► Binance REST + 2s 轮询
+ ├─ setHistory(bars) ──► 每个 <Comp> 收到 data={history}
+ └─ LIBRARIES 注册表（symbol/period/live 同源同步切给 4 库）
+```
+
+- **单向数据流**：一个数据源 → 4 库，同源同参同数据，横向对比公平
+- **切页卸载/重挂载**：看板回后台即停轮询，切回重新拉取（省请求且数据新鲜）
+- **适配层独立**：每个库一个组件，props 收敛为 `{ data, symbol, period, live }`，差异全封装在组件内部
+
+---
+
+## 📜 开源许可
+
+Apache-2.0 协议可自由商用；本项目已按各库协议保留 NOTICE 声明（如 lightweight-charts 去 attribution logo 的代码注释）。
+
+**数据声明**：本项目演示数据全部来自公开免费 API（Binance 等），仅作学习与技术评测用途，不构成任何投资建议。
