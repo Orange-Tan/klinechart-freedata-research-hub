@@ -1,0 +1,334 @@
+/* ===== 数据调研页（复用 report 基础布局，叠加数据调研专属样式） ===== */
+
+.dresearch-header {
+  padding-bottom: 18px;
+}
+
+.dresearch-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dresearch-runall {
+  flex: 0 0 auto;
+  background: #26a69a;
+  color: #0b0e17;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, filter 0.15s;
+  white-space: nowrap;
+}
+
+.dresearch-runall:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.dresearch-runall:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dresearch-code {
+  background: #161c2c;
+  border: 1px solid #2b3245;
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 12px;
+  color: #7aa2f7;
+}
+
+.dresearch-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dresearch-legend .legend-split {
+  width: 1px;
+  height: 16px;
+  background: #2b3245;
+  margin: 0 4px;
+}
+
+.dresearch-legend .legend-note {
+  color: #4a5568;
+}
+
+/* 市场区块 */
+.dresearch-section {
+  scroll-margin-top: 8px;
+}
+
+.dresearch-count {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.dresearch-market-desc {
+  margin: -8px 0 14px;
+  font-size: 12.5px;
+  color: #8b949e;
+}
+
+.dresearch-market-desc strong {
+  color: #26a69a;
+}
+
+/* 表格加宽 */
+.dresearch-table th:nth-child(1) {
+  width: 56px;
+}
+.dresearch-table th:nth-child(2) {
+  min-width: 250px;
+}
+.dresearch-table th:nth-child(6) {
+  min-width: 180px;
+}
+.dresearch-table th:nth-child(7) {
+  min-width: 190px;
+}
+
+.dresearch-table td {
+  vertical-align: top;
+  font-size: 12.5px;
+}
+
+.row-ex td {
+  opacity: 0.55;
+}
+
+/* 排名列 */
+.dresearch-rank {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dresearch-score {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+.score-high {
+  color: #26a69a;
+  background: #26a69a1a;
+  border: 1px solid #26a69a40;
+}
+
+.score-mid {
+  color: #e0af68;
+  background: #e0af6818;
+  border: 1px solid #e0af6840;
+}
+
+.score-low {
+  color: #8b949e;
+  background: #161c2c;
+  border: 1px solid #2b3245;
+}
+
+.dresearch-no {
+  color: #4a5568;
+  font-size: 12px;
+}
+
+/* 名称列 */
+.dresearch-name strong {
+  color: #e8ecf3;
+  font-size: 13px;
+}
+
+.dresearch-role {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 1px 7px;
+  vertical-align: 1px;
+}
+
+.role-main {
+  color: #26a69a;
+  background: #26a69a1a;
+  border: 1px solid #26a69a40;
+}
+
+.role-backup {
+  color: #7aa2f7;
+  background: #7aa2f71a;
+  border: 1px solid #7aa2f740;
+}
+
+.role-ref {
+  color: #8b949e;
+  background: #161c2c;
+  border: 1px solid #2b3245;
+}
+
+.role-ex {
+  color: #f7768e;
+  background: #f7768e18;
+  border: 1px solid #f7768e40;
+}
+
+.dresearch-accessnote {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: #e0af68;
+  line-height: 1.5;
+  max-width: 360px;
+}
+
+/* 限制列 */
+.dresearch-limits {
+  color: #9aa4b2;
+}
+
+/* 使用条件徽标 */
+.dresearch-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.ab {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+.ab-none {
+  font-size: 11px;
+  color: #4a5568;
+}
+
+.ab-direct {
+  color: #9ece6a;
+  background: #9ece6a1a;
+  border: 1px solid #9ece6a40;
+}
+
+.ab-vpn {
+  color: #f7768e;
+  background: #f7768e18;
+  border: 1px solid #f7768e40;
+}
+
+.ab-proxy {
+  color: #7aa2f7;
+  background: #7aa2f71a;
+  border: 1px solid #7aa2f740;
+}
+
+.ab-jsonp {
+  color: #c0a5e0;
+  background: #c0a5e01a;
+  border: 1px solid #c0a5e040;
+}
+
+.ab-key {
+  color: #e0af68;
+  background: #e0af6818;
+  border: 1px solid #e0af6840;
+}
+
+.ab-server {
+  color: #8b949e;
+  background: #161c2c;
+  border: 1px solid #2b3245;
+}
+
+.dresearch-reason {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* 连通性检测列 */
+.check-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 150px;
+}
+
+.st {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.st.idle {
+  color: #8b949e;
+}
+.st.checking {
+  color: #e0af68;
+}
+.st.ok {
+  color: #9ece6a;
+}
+.st.fail {
+  color: #f7768e;
+}
+.st.na {
+  color: #4a5568;
+}
+
+.check-btn {
+  background: #161c2c;
+  color: #d7dbe4;
+  border: 1px solid #2b3245;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.check-btn:hover:not(:disabled) {
+  background: #1a2233;
+  border-color: #4a5568;
+}
+
+.check-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.check-detail {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.check-note {
+  font-size: 11px;
+  color: #4a5568;
+  line-height: 1.45;
+}
+
+/* 表格在窄屏时保持横向滚动 */
+.dresearch-table {
+  min-width: 900px;
+}

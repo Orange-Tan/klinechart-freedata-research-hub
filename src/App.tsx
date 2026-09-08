@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { Dashboard } from './pages/Dashboard';
 import { ResearchReport } from './pages/ResearchReport';
+import { DataResearch } from './pages/DataResearch';
 
-type PageId = 'dashboard' | 'report';
+type PageId = 'dashboard' | 'report' | 'data';
 
 /**
- * 侧边栏快速切换的两个页面。
+ * 侧边栏快速切换的三个页面。
  * 切页时对应组件会卸载/重挂载：对比看板回到后台就停止 Binance 轮询订阅，
  * 再切回来重新拉取（数据新鲜且不浪费请求）。
  */
 const PAGES = [
   { id: 'dashboard', label: '多图对比', icon: '📊', Comp: Dashboard },
   { id: 'report', label: '图表调研', icon: '📖', Comp: ResearchReport },
+  { id: 'data', label: '数据调研', icon: '📡', Comp: DataResearch },
 ] as const;
 
 export default function App() {
@@ -46,7 +48,13 @@ export default function App() {
         <div className="sidebar-foot">数据源：Binance API</div>
       </aside>
       <div className="main">
-        {page === 'dashboard' ? <Dashboard /> : <ResearchReport />}
+        {page === 'dashboard' ? (
+          <Dashboard />
+        ) : page === 'report' ? (
+          <ResearchReport />
+        ) : (
+          <DataResearch />
+        )}
       </div>
     </div>
   );
