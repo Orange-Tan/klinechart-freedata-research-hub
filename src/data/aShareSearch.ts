@@ -11,7 +11,7 @@ import type { StockResult } from '../types/ohlcv';
  *     `v_hint="sh~000001~上证指数~szzs~ZS^..."`，ZS=指数 / GP-A=股票 / KJ=基金。
  *
  * 为什么做双源兜底：两个端点都有偶发不可用（东财偶发不发请求/响应挂起、smartbox
- * 偶发超时），单靠一个源搜索框会随机失灵。策略：先发东财，1.5s 超时仍未返回则
+ * 偶发超时），单靠一个源搜索框会随机失灵。策略：先发东财，5s 超时仍未返回则
  * 立刻发腾讯，谁先返回用谁，不让用户干等。
  *
  * 返回结果的 Type 分类（东财实测）：
@@ -33,7 +33,8 @@ interface SuggestResp {
 }
 
 const SEARCH_URL =
-  'https://searchapi.eastmoney.com/api/suggest/get?type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=10';const EASTMONEY_TIMEOUT_MS = 5000;
+  'https://searchapi.eastmoney.com/api/suggest/get?type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=10';
+const EASTMONEY_TIMEOUT_MS = 5000;
 const GLOBAL_TIMEOUT_MS = 9000;
 
 /**
@@ -44,38 +45,38 @@ export function searchAStock(keyword: string): Promise<StockResult[]> {
   const kw = keyword.trim();
   if (kw.length < 2) return Promise.resolve([]);
 
-/** 双源竞速：东财先发（1.5s 超时即切换腾讯），两个都可能超时（兜底 GLOBAL_TIMEOUT）。
- * 谁先 resolve 就用谁；都失败时整体 reject（调用方展示为空下拉）。 */
-const eastmoneyPromise = jsonp<SuggestResp>(
-  `${SEARCH_URL}&input=${encodeURIComponent(kw)}`,
-  'cb',
-  EASTMONEY_TIMEOUT_MS,
-).then((resp) => parseEastmoney(resp));
+  // 双源竞速：东财先发（5s 超时即切换腾讯），两个都可能超时（兜底 GLOBAL_TIMEOUT）。
+  // 谁先 resolve 就用谁；都失败时整体 reject（调用方展示为空下拉）。
+  const eastmoneyPromise = jsonp<SuggestResp>(
+    `${SEARCH_URL}&input=${encodeURIComponent(kw)}`,
+    'cb',
+    EASTMONEY_TIMEOUT_MS,
+  ).then((resp) => parseEastmoney(resp));
 
-const tencentPromise = jsonpTencent(kw);
+  const tencentPromise = jsonpTencent(kw);
 
-return new Promise<StockResult[]>((resolve, reject) => {
-  const timer = window.setTimeout(() => {
-    reject(new Error('搜索请求超时'));
-  }, GLOBAL_TIMEOUT_MS);
-  // settle 只清计时器（幂等）；resolve 天然只接受第一个调用，重复调用被忽略，
-  // 所以两个来源谁先成功谁决定结果，后到的不影响。
-  const settle = () => window.clearTimeout(timer);
-  eastmoneyPromise.then(
-    (v) => {
-      settle();
-      resolve(v);
-    },
-    () => {},
-  );
-  tencentPromise.then(
-    (v) => {
-      settle();
-      resolve(v);
-    },
-    () => {},
-  );
-});
+  return new Promise<StockResult[]>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error('搜索请求超时'));
+    }, GLOBAL_TIMEOUT_MS);
+    // settle 只清计时器（幂等）；resolve 天然只接受第一个调用，重复调用被忽略，
+    // 所以两个来源谁先成功谁决定结果，后到的不影响。
+    const settle = () => window.clearTimeout(timer);
+    eastmoneyPromise.then(
+      (v) => {
+        settle();
+        resolve(v);
+      },
+      () => {},
+    );
+    tencentPromise.then(
+      (v) => {
+        settle();
+        resolve(v);
+      },
+      () => {},
+    );
+  });
 }
 
 function parseEastmoney(resp: SuggestResp | undefined): StockResult[] {

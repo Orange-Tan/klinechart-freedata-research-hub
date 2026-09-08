@@ -15,6 +15,8 @@ export interface LightweightChartsProps {
   symbol: string;
   /** 是否实时追加/更新最后一根 K 线 */
   live?: boolean;
+  /** 全量重设信号：变化时强制整表重绘（如切换历史根数） */
+  resetKey?: string;
 }
 
 const UPDOWN_COLORS = {
@@ -26,13 +28,15 @@ const UPDOWN_COLORS = {
  * lightweight-charts 适配组件。
  * 主图：CandlestickSeries；副图：HistogramSeries(成交量)。
  */
-export function LightweightChart({ data, symbol, live = true }: LightweightChartsProps) {
+export function LightweightChart({ data, symbol, live = true, resetKey }: LightweightChartsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   // 记录已渲染到的最后一根 K 线时间，用于增量 update
   const lastTimeRef = useRef<number | null>(null);
+  // 已渲染到的 resetKey（历史根数等整体替换信号）：变化时强制全量重设
+  const lastResetKeyRef = useRef<string | null>(null);
 
   // 创建图表（只执行一次）
   useEffect(() => {
@@ -94,6 +98,7 @@ export function LightweightChart({ data, symbol, live = true }: LightweightChart
       candleRef.current = null;
       volumeRef.current = null;
       lastTimeRef.current = null;
+      lastResetKeyRef.current = null;
     };
   }, []);
 
@@ -111,10 +116,18 @@ export function LightweightChart({ data, symbol, live = true }: LightweightChart
 
     // live 模式
     const lastTime = lastTimeRef.current;
-    if (lastTime === null || data[data.length - 1].time < lastTime) {
+    // 历史根数等整体替换信号变化：即使时间序列未倒退也要全量重设
+    // （否则增量 update 只会"补 + 追加"新 bar，旧 bar 数量不变）
+    const keyChanged = resetKey !== undefined && resetKey !== lastResetKeyRef.current;
+    if (
+      lastTime === null ||
+      data[data.length - 1].time < lastTime ||
+      keyChanged
+    ) {
       // 首次加载，或数据被整体替换（symbol/period 切换后时间倒退）：全量设置
       candle.setData(data.map(toCandle));
       volume.setData(data.map(toVolume));
+      lastResetKeyRef.current = resetKey ?? null;
     } else {
       // 增量：找到与已渲染最后一根同时间戳的位置，从那里开始逐根 update()。
       // update() 对同时间戳是替换、对新时间戳是追加，所以既覆盖"当前未收 K 线
@@ -134,8 +147,8 @@ export function LightweightChart({ data, symbol, live = true }: LightweightChart
         }
       }
     }
-    lastTimeRef.current = data[data.length - 1].time;
-  }, [data, live]);
+      lastTimeRef.current = data[data.length - 1].time;
+  }, [data, live, resetKey]);
 
   // symbol 变化时滚动到最后
   useEffect(() => {

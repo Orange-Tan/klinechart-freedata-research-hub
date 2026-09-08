@@ -109,12 +109,14 @@ export function Dashboard() {
   const [results, setResults] = useState<StockResult[]>([]);
   const [searching, setSearching] = useState(false);
 
-  // 切数据源时重置到该源的默认标的
+  // 切数据源时重置到该源的默认标的，并清掉残留的搜索词/结果
   function handleSourceChange(next: DataSourceId) {
     const d = SOURCE_DEFAULTS[next];
     setSourceId(next);
     setSymbol(d.symbol);
     setSymbolLabel(d.label);
+    setQuery('');
+    setResults([]);
   }
 
   // 搜索（仅支持搜索的源；TDX/无搜索能力时静默跳过）
@@ -308,7 +310,13 @@ export function Dashboard() {
                 <span className="sr-only bars-count">{history.length} bars</span>
               </header>
               <div className="chart-wrap">
-                <Comp data={history} symbol={symbol} period={period} live={live} />
+                <Comp
+                  data={history}
+                  symbol={symbol}
+                  period={period}
+                  live={live}
+                  resetKey={`${symbol}/${period}/${historyLimit}`}
+                />
               </div>
             </section>
           ))}

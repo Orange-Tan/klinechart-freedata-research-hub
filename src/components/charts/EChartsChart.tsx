@@ -50,6 +50,8 @@ export interface EChartsChartProps {
   symbol: string;
   /** 是否实时追加/更新最后一根 K 线 */
   live?: boolean;
+  /** 全量重设信号：变化时即使 (symbol) 不变也强制整表重绘（如切换历史根数） */
+  resetKey?: string;
 }
 
 const UPDOWN = { up: '#26a69a', down: '#ef5350' } as const;
@@ -60,10 +62,11 @@ const UPDOWN = { up: '#26a69a', down: '#ef5350' } as const;
  * 通用坐标系 + dataZoom 实现缩放/平移，与"专门 K 线库"的交互方式有差异，
  * 正好作为对比维度。
  */
-export function EChartsChart({ data, symbol, live = true }: EChartsChartProps) {
+export function EChartsChart({ data, symbol, live = true, resetKey }: EChartsChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<EChartsType | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+  const lastResetKeyRef = useRef<string | null>(null);
 
   // 创建图表（只执行一次）
   useEffect(() => {
@@ -86,10 +89,14 @@ export function EChartsChart({ data, symbol, live = true }: EChartsChartProps) {
     if (!chart || data.length === 0) return;
 
     const lastTime = lastTimeRef.current;
-    const replace = !live || lastTime === null || data[data.length - 1].time < lastTime;
+    // resetKey（历史根数等）变化也是整体替换信号：即使同一 symbol/时间序列未倒退，
+    // 也要整表重绘（否则增量 merge 只会补上新 bar，旧 bar 根数不会变）。
+    const keyChanged = resetKey !== undefined && resetKey !== lastResetKeyRef.current;
+    const replace = !live || lastTime === null || data[data.length - 1].time < lastTime || keyChanged;
 
     if (replace) {
       chart.setOption(buildOption(data, symbol));
+      lastResetKeyRef.current = resetKey ?? null;
     } else {
       // 增量：ECharts 没有 K 线专用的 update action，setOption 默认是 merge
       // （只有传 notMerge=true 才整表替换），所以直接按系列合并重设数据即可。
@@ -129,12 +136,15 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
   // 底部日期：OHLCV.time 是毫秒时间戳，category 轴默认把原始值当刻度文字
   // 直接显示（1757000000000），必须转成日期。日 K 显示 "YYYY-MM-DD"，
   // 分钟线补 "HH:mm"。
+  // 时区注意：所有数据源的时间戳都是 fake-UTC（A 股源按中国挂钟时间的
+  // Date.UTC() 解析、Binance 本身就是 UTC），因此必须用 getUTC* 取字段；
+  // 用本地时区 getter 会把日期/时刻漂移（如东八区用户 14:30 的 K 线显示成 06:30）。
   const daily = data.length > 1 && data[1].time - data[0].time >= 86_400_000;
   const fmt = (ms: number) => {
     const d = new Date(ms);
     const pad = (n: number) => String(n).padStart(2, '0');
-    const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    return daily ? date : `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const date = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+    return daily ? date : `${date} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
   };
   // 工具提示：axis 触发时头部默认也显示原始 category 值，同样转成日期
   const fmtTooltip = (params: unknown): string => {

@@ -9,6 +9,8 @@ export interface KLineChartProps {
   period: string;
   /** 是否实时追加/更新最后一根 K 线 */
   live?: boolean;
+  /** 全量重设信号：变化时强制整批重载（如切换历史根数） */
+  resetKey?: string;
 }
 
 const UPDOWN = { up: '#26a69a', down: '#ef5350' } as const;
@@ -43,7 +45,7 @@ function toKLineData(d: OHLCV): KLineData {
  * 新增一个副图 pane 且不去重，必须在 init 里用 ref 防重，否则每轮轮询
  * 都会累积出一个新的 VOL 窗口，把可伸缩的蜡烛图主窗口挤成 0 高。
  */
-export function KLineChart({ data, symbol, period, live = true }: KLineChartProps) {
+export function KLineChart({ data, symbol, period, live = true, resetKey }: KLineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<Chart | null>(null);
   // 最新一份数据的引用，供 getBars/init 在任意时刻读取（避免闭包过期值）
@@ -69,6 +71,10 @@ export function KLineChart({ data, symbol, period, live = true }: KLineChartProp
 
     const chart = init(el, {
       locale: 'zh-CN',
+      // 时间戳统一为 fake-UTC（A 股源按中国挂钟时间的 Date.UTC() 解析、Binance
+      // 本身就是 UTC），横轴刻度必须按 UTC 渲染；不给 timezone 会落到浏览器本地
+      // 时区，同一根 K 线的时间文字在非东八区用户机器上漂移。
+      timezone: 'UTC',
       styles: {
         separator: { color: '#1c2333', fill: true },
         grid: {
@@ -152,16 +158,16 @@ export function KLineChart({ data, symbol, period, live = true }: KLineChartProp
     chart.setPeriod(toPeriod(period));
   }, [period]);
 
-  // 数据接入：同一 (symbol, period) 的后续更新走增量；换了交易对/周期则
-  // 全量重载（init 会读取 dataRef 里的最新数据）
+  // 数据接入：同一 (symbol, period, resetKey) 的后续更新走增量；换了交易对、
+  // 周期或历史根数（resetKey）则全量重载（init 会读取 dataRef 里的最新数据）
   useEffect(() => {
     if (data.length === 0) return;
     const chart = chartRef.current;
     if (!chart) return;
 
-    const key = `${symbol}/${period}`;
+    const key = `${symbol}/${period}/${resetKey ?? ''}`;
     if (key !== loadedKeyRef.current) {
-      // 首帧数据到达 / 交易对或周期已切换：整批重载
+      // 首帧数据到达 / 交易对、周期或历史根数已切换：整批重载
       chart.resetData();
       loadedKeyRef.current = key;
     } else if (live) {
@@ -169,7 +175,7 @@ export function KLineChart({ data, symbol, period, live = true }: KLineChartProp
       const last = data[data.length - 1];
       livePushRef.current?.(toKLineData(last));
     }
-  }, [data, symbol, period, live]);
+  }, [data, symbol, period, live, resetKey]);
 
   return <div ref={containerRef} className="chart-container" />;
 }
