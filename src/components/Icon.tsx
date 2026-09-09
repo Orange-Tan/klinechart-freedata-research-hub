@@ -8,8 +8,7 @@ import { Icon as IconifyIcon, type IconProps as IconifyIconProps } from '@iconif
  * 懒加载自 https://api.iconify.design（实际请求形如
  * `https://api.iconify.design/ph.json?icons=chart-bar`），首次加载后缓存。
  * 加载中 / 网络失败（图标数据拉不回来）时，用内置 fallback 降级：
- * 优先渲染 FALLBACK_GLYPH 里对应的 emoji 文本，无对应则渲染空占位 span
- * （不传 fallback 时 @iconify/react 默认就是空 span）。
+ * 渲染 REPLACE_MAP 里该项的 fallback emoji。
  *
  * ## 版权
  * 使用 Phosphor（`ph:`）图标集 —— MIT 协议（https://phosphoricons.com/），
@@ -17,58 +16,53 @@ import { Icon as IconifyIcon, type IconProps as IconifyIconProps } from '@iconif
  * 各图标含义见下方 REPLACE_MAP 映射表。
  */
 
-/** 本项目所有图标（含其在 Iconify 的加载失败兜底 emoji），集中在此声明便于统一管理 */
+/**
+ * 全站图标注册表（单一数据源）：每一项 = { icon: Iconify 图标名, fallback: 加载失败降级 emoji }。
+ * 新增图标只需在此加一行：iconOf() 取图标名、Icon 组件取降级 emoji 都从这张表派生，
+ * 不会出现两处映射不同步。
+ */
 export const REPLACE_MAP = {
   // —— 侧边栏（App.tsx）——
-  '多图对比': 'ph:chart-bar', // 📊 → 柱状图（对比看板）
-  '图表调研': 'ph:book-open', // 📖 → 打开的书（调研报告）
-  '数据调研': 'ph:target', // 📡 → 准星（连通性扫描/探测目标）
+  '多图对比': { icon: 'ph:chart-bar', fallback: '📊' }, // 柱状图（对比看板）
+  '图表调研': { icon: 'ph:book-open', fallback: '📖' }, // 打开的书（调研报告）
+  '数据调研': { icon: 'ph:target', fallback: '📡' }, // 准星（连通性扫描/探测目标）
   // —— 折叠按钮（App.tsx）——
-  '侧栏展开': 'ph:caret-right', // » →
-  '侧栏收起': 'ph:caret-left', // « ←
+  '侧栏展开': { icon: 'ph:caret-right', fallback: '»' },
+  '侧栏收起': { icon: 'ph:caret-left', fallback: '«' },
   // —— 数据调研页（DataResearch.tsx + dataResearchData.ts）——
-  '一键检测': 'ph:lightning', // ⚡
-  '检测中': 'ph:spinner-gap', // ⏳（spinning 转圈）
-  '连通': 'ph:check-circle', // ✅
-  '失败': 'ph:x-circle', // ❌
-  '需外网': 'ph:globe', // 🌐
-  '需代理': 'ph:arrows-clockwise', // 🔁
-  '需Key': 'ph:key', // 🔑
+  '一键检测': { icon: 'ph:lightning', fallback: '⚡' },
+  '检测中': { icon: 'ph:spinner-gap', fallback: '⏳' }, // spinning 转圈
+  '连通': { icon: 'ph:check-circle', fallback: '✅' },
+  '失败': { icon: 'ph:x-circle', fallback: '❌' },
+  '需外网': { icon: 'ph:globe', fallback: '🌐' },
+  '需代理': { icon: 'ph:arrows-clockwise', fallback: '🔁' },
+  '需Key': { icon: 'ph:key', fallback: '🔑' },
   // —— 市场区块标题（dataResearchData.ts）——
-  'A股': 'ph:chart-line', // 🇨🇳 → 折线（指数走势）
-  '美股': 'ph:currency-dollar', // 🇺🇸 → 美元
-  '加密货币': 'ph:coins', // 🪙
-  '期货': 'ph:cube', // 📦 → 立方（期货交割品）
-  '基金': 'ph:bank', // 🏦 → 银行（基金托管）
+  'A股': { icon: 'ph:chart-line', fallback: '🇨🇳' }, // 折线（指数走势）
+  '美股': { icon: 'ph:currency-dollar', fallback: '🇺🇸' }, // 美元
+  '加密货币': { icon: 'ph:coins', fallback: '🪙' },
+  '期货': { icon: 'ph:cube', fallback: '📦' }, // 立方（期货交割品）
+  '基金': { icon: 'ph:bank', fallback: '🏦' }, // 银行（基金托管）
   // —— 图表调研页（ResearchReport.tsx）——
-  '维护活跃': 'ph:circle-fill', // 🟢（配合 CSS 上色）
-  '维护停更': 'ph:circle-fill', // 🔴（配合 CSS 上色）
-  '优点': 'ph:check-circle', // ✅
-  '缺点': 'ph:x-circle', // ❌
-  '警告': 'ph:warning', // ⚠️
-  '星标': 'ph:star-fill', // ★
+  // 维护状态圆点：在线时 SVG 靠 .maintain-label 上绿、.red 上红；
+  // 离线 fallback 必须用继承当前文字颜色的纯文本字符（●），
+  // 若用 🟢/🔴 这类自带颜色的 emoji，反向映射表按图标名去重后两个语义
+  // 条目只留一个 fallback，会把"维护活跃"也渲染成红点（语义反转）。
+  '维护活跃': { icon: 'ph:circle-fill', fallback: '●' },
+  '维护停更': { icon: 'ph:circle-fill', fallback: '●' },
+  '优点': { icon: 'ph:check-circle', fallback: '✅' },
+  '缺点': { icon: 'ph:x-circle', fallback: '❌' },
+  '警告': { icon: 'ph:warning', fallback: '⚠️' },
+  '星标': { icon: 'ph:star-fill', fallback: '★' },
 } as const;
 
-export type IconName = (typeof REPLACE_MAP)[keyof typeof REPLACE_MAP];
+/** 图标名（形如 "ph:chart-bar"），即 REPLACE_MAP 各项的 icon 字段 */
+export type IconName = (typeof REPLACE_MAP)[keyof typeof REPLACE_MAP]['icon'];
 
-/** 在线图标加载失败/网络断开时的降级 emoji（与 REPLACE_MAP 一一对应） */
-const FALLBACK_GLYPH: Partial<Record<IconName, string>> = {
-  'ph:spinner-gap': '⏳',
-  'ph:lightning': '⚡',
-  'ph:check-circle': '✅',
-  'ph:x-circle': '❌',
-  'ph:globe': '🌐',
-  'ph:arrows-clockwise': '🔁',
-  'ph:key': '🔑',
-  'ph:chart-line': '🇨🇳',
-  'ph:currency-dollar': '🇺🇸',
-  'ph:coins': '🪙',
-  'ph:cube': '📦',
-  'ph:bank': '🏦',
-  'ph:warning': '⚠️',
-  'ph:star-fill': '★',
-  'ph:target': '📡',
-};
+/** 图标名 → 降级 emoji（从 REPLACE_MAP 派生，保持单一数据源） */
+const ICON_FALLBACK = new Map<string, string>(
+  Object.values(REPLACE_MAP).map((e) => [e.icon, e.fallback] as const),
+);
 
 /**
  * 对外 props：与 @iconify/react 的 IconProps 兼容（透传全部 SVG props 与
@@ -82,7 +76,7 @@ const FALLBACK_GLYPH: Partial<Record<IconName, string>> = {
 export interface IconProps extends Omit<IconifyIconProps, 'icon'> {
   /** Iconify 图标名（形如 "ph:chart-bar"），见 REPLACE_MAP */
   icon: IconName;
-  /** 加载中/加载失败时显示的回退内容；不传则降级为对应 emoji（无则空占位） */
+  /** 加载中/加载失败时显示的回退内容；不传则降级为对应 emoji */
   fallback?: ReactNode;
 }
 
@@ -92,7 +86,7 @@ export interface IconProps extends Omit<IconifyIconProps, 'icon'> {
  * 默认尺寸 1em：跟随父元素 font-size，方便文字内嵌与统一缩放。
  */
 export function Icon({ icon, className, fallback, ...rest }: IconProps) {
-  const glyph = FALLBACK_GLYPH[icon];
+  const glyph = ICON_FALLBACK.get(icon);
   const defaultFallback = glyph ? (
     <span
       className={className}
@@ -115,13 +109,12 @@ export function Icon({ icon, className, fallback, ...rest }: IconProps) {
   );
 }
 
-/** 便捷导出：原 @iconify/react 的类型，供需要直接使用其 props 的地方复用 */
-export type { IconifyIconProps };
-
 /**
  * 便捷引用：从 REPLACE_MAP 里取图标名（带类型约束，确保是已声明过的 key）。
  * 例：`icon={iconOf('连通')}`。
  */
-export function iconOf<K extends keyof typeof REPLACE_MAP>(key: K): (typeof REPLACE_MAP)[K] {
-  return REPLACE_MAP[key];
+export function iconOf<K extends keyof typeof REPLACE_MAP>(
+  key: K,
+): (typeof REPLACE_MAP)[K]['icon'] {
+  return REPLACE_MAP[key].icon;
 }

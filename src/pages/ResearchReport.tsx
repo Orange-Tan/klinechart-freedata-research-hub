@@ -1,27 +1,19 @@
 import './ResearchReport.css';
-import { Icon, REPLACE_MAP, type IconName } from '../components/Icon';
+import { Icon, iconOf, type IconName } from '../components/Icon';
 
 /** 首批 4 库徽标配色 */
 const ACCENTS = ['#26a69a', '#7aa2f7', '#f7768e', '#e0af68'] as const;
 
-/** 维护状态图标（Iconify）：按状态取色 */
-const MAINTAIN_ICON: Record<string, IconName> = {
-  '🟢 活跃': REPLACE_MAP['维护活跃'],
-  '🟢 商业产品': REPLACE_MAP['维护活跃'],
-  '🔴 停更(2024)': REPLACE_MAP['维护停更'],
-};
-
 /**
  * 维护状态徽标：绿点=活跃/商业产品，红点=停更。
- * 用 Iconify circle-fill + CSS 上色，替代原 emoji 🟢/🔴。
+ * 由 status 文本是否以 🔴 前缀判定（不存在其它非红前缀），不再单独维护一份图标映射。
  */
 function MaintainLabel({ status }: { status: string }) {
-  const icon = MAINTAIN_ICON[status] ?? REPLACE_MAP['维护活跃'];
   const red = status.startsWith('🔴');
   return (
     <span className={`maintain-label${red ? ' red' : ''}`}>
-      <span className="maintain-dot">
-        <Icon icon={icon} height="0.85em" />
+      <span className="icon-cell">
+        <Icon icon={iconOf(red ? '维护停更' : '维护活跃')} height="0.85em" />
       </span>
       {status.slice(2)}
     </span>
@@ -30,30 +22,23 @@ function MaintainLabel({ status }: { status: string }) {
 
 /**
  * 功能矩阵单元格：数据里以 emoji 前缀标记优劣（✅ 优 / ❌ 缺 / ⚠️ 中），
- * 渲染时把前缀转成 Iconify 图标（ph:check-circle / ph:x-circle / ph:warning），
- * 无前缀的纯文本（如"优"/"良"）则不带图标。
+ * 渲染时把前缀转成 Iconify 图标 + 语义配色 class（ok/fail/warn），
+ * 无前缀的纯文本（如"优"/"良"）则不带图标。单表声明避免两处映射不同步。
  */
-const MATRIX_GLYPH: Record<string, IconName> = {
-  '✅': REPLACE_MAP['优点'],
-  '❌': REPLACE_MAP['缺点'],
-  '⚠️': REPLACE_MAP['警告'],
-};
+const MATRIX_META = {
+  '✅': { icon: iconOf('优点'), cls: 'ok' },
+  '❌': { icon: iconOf('缺点'), cls: 'fail' },
+  '⚠️': { icon: iconOf('警告'), cls: 'warn' },
+} as const;
 
-function matrixCell(v: string): { icon: IconName | null; label: string } {
-  for (const [glyph, icon] of Object.entries(MATRIX_GLYPH)) {
-    if (v.startsWith(glyph)) return { icon, label: v.slice(glyph.length).trim() };
+function matrixCell(v: string): { icon: IconName | null; cls: string; label: string } {
+  for (const [glyph, meta] of Object.entries(MATRIX_META)) {
+    if (v.startsWith(glyph)) return { icon: meta.icon, cls: meta.cls, label: v.slice(glyph.length).trim() };
   }
-  return { icon: null, label: v };
+  return { icon: null, cls: '', label: v };
 }
 
-/** 矩阵单元格图标按语义上色：✅绿 / ❌红 / ⚠️黄（与全站徽标配色一致） */
-const MATRIX_ICON_CLS: Partial<Record<IconName, string>> = {
-  [REPLACE_MAP['优点']]: 'ok',
-  [REPLACE_MAP['缺点']]: 'fail',
-  [REPLACE_MAP['警告']]: 'warn',
-};
-
-/** 候选库总览表数据（与 docs/图表库调研报告.md 保持一致） */
+/** 候选库总览表数据（与 docs/图表库调研报告.md 保持一致）；repo 为 GitHub 仓库地址 */
 const CANDIDATES = [
   {
     name: 'lightweight-charts',
@@ -66,6 +51,7 @@ const CANDIDATES = [
     maintain: '🟢 活跃',
     tag: '首选',
     accent: ACCENTS[0],
+    repo: 'https://github.com/tradingview/lightweight-charts',
   },
   {
     name: 'KLineChart',
@@ -78,6 +64,7 @@ const CANDIDATES = [
     maintain: '🟢 活跃',
     tag: '开箱即用',
     accent: ACCENTS[1],
+    repo: 'https://github.com/klinecharts/KLineChart',
   },
   {
     name: 'HQChart',
@@ -90,6 +77,7 @@ const CANDIDATES = [
     maintain: '🟢 活跃',
     tag: '多市场',
     accent: ACCENTS[2],
+    repo: 'https://github.com/jones2000/HQChart',
   },
   {
     name: 'Apache ECharts',
@@ -102,10 +90,11 @@ const CANDIDATES = [
     maintain: '🟢 活跃',
     tag: '全能对照',
     accent: ACCENTS[3],
+    repo: 'https://github.com/apache/echarts',
   },
 ];
 
-/** 其他值得关注的库（与 docs/图表库调研报告.md 保持一致） */
+/** 其他值得关注的库（与 docs/图表库调研报告.md 保持一致）；repo 为 GitHub 仓库地址 */
 const OTHERS = [
   {
     name: 'uPlot',
@@ -118,6 +107,7 @@ const OTHERS = [
     desc: '官方定位"极致性能的极简时序图库"，宣称比同类快 10 倍：同一份数据 150k 点仍能 60fps 渲染，gzip 仅 ~55kb、零依赖。只做绘图引擎（不含指标/画线/交互组件），常被当作"底图"叠加自定义图层。',
     fit: '超大数据量时序、监控面板、需要极速刷新的看板',
     warn: false,
+    repo: 'https://github.com/leeoniya/uPlot',
   },
   {
     name: 'Plotly.js',
@@ -130,6 +120,7 @@ const OTHERS = [
     desc: '科学计算与交互图表之王，WebGL 加速可渲染百万级数据点，与 Python 的 Plotly / Dash 生态无缝互通（同一份配置前后端复用）。图表种类覆盖 3D/等高线/科学可视化，但包体积 ~400kb 偏大，K 线金融交互细节一般。',
     fit: '科学/金融研究绘图、Python 生态配合的量化研究平台',
     warn: false,
+    repo: 'https://github.com/plotly/plotly.js',
   },
   {
     name: 'ApexCharts',
@@ -142,6 +133,7 @@ const OTHERS = [
     desc: 'SVG 渲染、UI 精美的通用图表库，图表类型丰富、上手快，内置主题与响应式适配。虽然仓库标注 MIT，但 SPDX 标识为"NOASSERTION"，实际是付费商用的变体，商用需购买授权。',
     fit: '业务仪表盘、后台管理系统',
     warn: true,
+    repo: 'https://github.com/apexcharts/apexcharts.js',
   },
   {
     name: 'trading-vue-js',
@@ -154,6 +146,7 @@ const OTHERS = [
     desc: 'Vue 3 交易图表库，数据层与渲染层分离，支持叠加任意自定义图层（指标/事件/订单标记），可深度 hack 交易界面。但 2024 年起停止维护，且只适配 Vue 技术栈，仅作参考。',
     fit: 'Vue 技术栈做自定义交易界面的参考实现',
     warn: true,
+    repo: 'https://github.com/tvjsx/trading-vue-js',
   },
   {
     name: 'TradingView charting-library',
@@ -166,6 +159,7 @@ const OTHERS = [
     desc: 'TradingView 官方收费图库，专业交易终端级功能天花板：内置上百种指标、画线、多周期联动、研究面板、深度移动端适配等开箱即用。完全闭源、按席位收费（自托管版），免费版需保留 TradingView 品牌且功能受限。',
     fit: '预算充足的专业交易终端 / 券商产品',
     warn: true,
+    repo: 'https://github.com/tradingview/charting_library',
   },
   {
     name: 'Highcharts',
@@ -178,6 +172,7 @@ const OTHERS = [
     desc: '老牌图表库（highcharts.com 同源），SVG 渲染兼容性极好、文档与官方示例是业界标杆，另有 Highstock 专门做金融 K 线/OHLC。source-available 协议：非商用免费，商用需购买授权（数百美元级）。',
     fit: '需要成熟文档与兼容性的商用产品（需购买授权）',
     warn: true,
+    repo: 'https://github.com/highcharts/highcharts',
   },
 ];
 
@@ -269,7 +264,9 @@ export function ResearchReport() {
                   <tr key={c.name}>
                     <td className="lib-cell">
                       <span className="lib-dot" style={{ background: c.accent }} />
-                      <strong>{c.name}</strong>
+                      <a className="lib-name-link" href={c.repo} target="_blank" rel="noreferrer" title={c.repo}>
+                        <strong>{c.name}</strong>
+                      </a>
                       <em className="lib-tag">{c.tag}</em>
                     </td>
                     <td>{c.org}</td>
@@ -290,8 +287,8 @@ export function ResearchReport() {
           </div>
           <div className="notice">
             <strong>
-              <span className="notice-icon">
-                <Icon icon={REPLACE_MAP['警告']} height="1em" />
+              <span className="icon-cell">
+                <Icon icon={iconOf('警告')} height="1em" />
               </span>
               协议提示：
             </strong>
@@ -312,8 +309,8 @@ export function ResearchReport() {
                   <em>{c.tag}</em>
                 </h3>
                 <p className="detail-stars">
-                  <span className="detail-stars-icon">
-                    <Icon icon={REPLACE_MAP['星标']} height="1em" />
+                  <span className="icon-cell star">
+                    <Icon icon={iconOf('星标')} height="1em" />
                   </span>
                   {c.stars} · {c.org}
                 </p>
@@ -332,8 +329,8 @@ export function ResearchReport() {
                 <div className="pros-cons">
                   <div className="pros">
                     <h4>
-                      <span className="pros-icon">
-                        <Icon icon={REPLACE_MAP['优点']} height="1em" />
+                      <span className="icon-cell ok">
+                        <Icon icon={iconOf('优点')} height="1em" />
                       </span>
                       优点
                     </h4>
@@ -345,8 +342,8 @@ export function ResearchReport() {
                   </div>
                   <div className="cons">
                     <h4>
-                      <span className="cons-icon">
-                        <Icon icon={REPLACE_MAP['缺点']} height="1em" />
+                      <span className="icon-cell fail">
+                        <Icon icon={iconOf('缺点')} height="1em" />
                       </span>
                       缺点
                     </h4>
@@ -385,7 +382,9 @@ export function ResearchReport() {
                 {OTHERS.map((o) => (
                   <tr key={o.name}>
                     <td>
-                      <strong>{o.name}</strong>
+                      <a className="lib-name-link" href={o.repo} target="_blank" rel="noreferrer" title={o.repo}>
+                        <strong>{o.name}</strong>
+                      </a>
                     </td>
                     <td>{o.org}</td>
                     <td>{o.stars}</td>
@@ -393,8 +392,8 @@ export function ResearchReport() {
                       <span className="license">{o.license}</span>
                       {o.warn && (
                         <span className="warn-tag">
-                          <span className="warn-tag-icon">
-                            <Icon icon={REPLACE_MAP['警告']} height="1em" />
+                          <span className="icon-cell warn">
+                            <Icon icon={iconOf('警告')} height="1em" />
                           </span>
                           商用注意
                         </span>
@@ -441,13 +440,13 @@ export function ResearchReport() {
                       const cell = matrixCell(v);
                       return (
                         <td key={i}>
-                          {cell.icon ? (
+                          {cell.icon && (
                             <span
-                              className={`matrix-icon${cell.label === '' ? ' icon-only' : ''} ${MATRIX_ICON_CLS[cell.icon]}`}
+                              className={`icon-cell${cell.label === '' ? ' icon-only' : ''} ${cell.cls}`}
                             >
                               <Icon icon={cell.icon} height="1em" />
                             </span>
-                          ) : null}
+                          )}
                           {cell.label}
                         </td>
                       );

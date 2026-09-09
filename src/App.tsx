@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Dashboard } from './pages/Dashboard';
 import { ResearchReport } from './pages/ResearchReport';
 import { DataResearch } from './pages/DataResearch';
-import { Icon, REPLACE_MAP } from './components/Icon';
+import { Icon, iconOf } from './components/Icon';
 
 type PageId = 'dashboard' | 'report' | 'data';
 
@@ -11,13 +11,16 @@ type PageId = 'dashboard' | 'report' | 'data';
  * 侧边栏快速切换的三个页面。
  * 切页时对应组件会卸载/重挂载：对比看板回到后台就停止 Binance 轮询订阅，
  * 再切回来重新拉取（数据新鲜且不浪费请求）。
- * 图标统一走 Iconify 在线图标（REPLACE_MAP 里维护 emoji → 图标名映射）。
+ * 图标统一走 Iconify 在线图标（REPLACE_MAP 里维护中文标签 → { icon, fallback } 映射）。
  */
 const PAGES = [
-  { id: 'dashboard', label: '多图对比', icon: REPLACE_MAP['多图对比'], Comp: Dashboard },
-  { id: 'report', label: '图表调研', icon: REPLACE_MAP['图表调研'], Comp: ResearchReport },
-  { id: 'data', label: '数据调研', icon: REPLACE_MAP['数据调研'], Comp: DataResearch },
+  { id: 'dashboard', label: '多图对比', icon: iconOf('多图对比'), Comp: Dashboard },
+  { id: 'report', label: '图表调研', icon: iconOf('图表调研'), Comp: ResearchReport },
+  { id: 'data', label: '数据调研', icon: iconOf('数据调研'), Comp: DataResearch },
 ] as const;
+
+/** 展开/折叠切换图标：按当前状态取对应图标 */
+const SIDEBAR_TOGGLE_ICON = (open: boolean) => (open ? iconOf('侧栏收起') : iconOf('侧栏展开'));
 
 export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
@@ -67,10 +70,7 @@ export default function App() {
           }}
           title={sidebarOpen ? '收起侧边栏' : '展开侧边栏'}
         >
-          <Icon
-            icon={sidebarOpen ? REPLACE_MAP['侧栏收起'] : REPLACE_MAP['侧栏展开']}
-            height="1em"
-          />
+          <Icon icon={SIDEBAR_TOGGLE_ICON(sidebarOpen)} height="1em" />
         </button>
         <nav className="sidebar-nav">
           {PAGES.map(({ id, label, icon }) => (

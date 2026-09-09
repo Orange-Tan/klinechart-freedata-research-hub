@@ -168,7 +168,10 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
     const title = list[0]?.axisValue !== undefined ? fmt(Number(list[0].axisValue)) : '';
     const rows = list
       .map((p) => {
-        const v = Array.isArray(p.value) ? p.value[1] : p.value;
+        // candlestick 主系列 value 是 [open, close, low, high]，取开盘价（下标 0）；
+        // 成交量 bar 系列 value 是 [index, volume]，取成交量（下标 1）。
+        const arr = Array.isArray(p.value) ? (p.value as number[]) : null;
+        const v = arr ? arr[0] : p.value;
         const text = p.seriesName === '成交量' ? fmtVolume(Number(v)) : String(v);
         return `${p.marker ?? ''}${p.seriesName ?? ''}: ${text}`;
       })
