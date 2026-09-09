@@ -15,6 +15,19 @@ export interface OHLCV {
 /** 周期枚举：与各库周期做映射时用 */
 export type KlinePeriod = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
 
+/** 周期展示标签（UI 下拉选项用） */
+export const PERIOD_LABEL: Record<KlinePeriod, string> = {
+  '1m': '1 分钟',
+  '5m': '5 分钟',
+  '15m': '15 分钟',
+  '1h': '1 小时',
+  '4h': '4 小时',
+  '1d': '日线',
+};
+
+/** 全部周期，按展示顺序排列（每个数据源的 supportedPeriods 都应取自它） */
+export const PERIOD_ALL: KlinePeriod[] = ['1m', '5m', '15m', '1h', '4h', '1d'];
+
 /** 股票搜索结果（顶部搜索框用） */
 export interface StockResult {
   /** 统一符号：加密货币为 BTCUSDT 等，A 股为腾讯格式 sh600519 / sz000001 */
@@ -31,6 +44,12 @@ export interface StockResult {
 export interface KlineDataSource {
   readonly id: string;
   readonly label: string;
+  /**
+   * 支持的时间周期（按 PERIOD_LABEL 的展示顺序）。
+   * 缺省=全部周期（PERIOD_ALL）。UI 周期下拉据此动态显示选项，
+   * 不支持的周期不会出现在下拉里，更不会发起请求。
+   */
+  readonly supportedPeriods?: readonly KlinePeriod[];
   /**
    * 拉取历史 K 线。
    * @param symbol 交易对/代码，如 'BTCUSDT' 或 A 股 'sh000001'

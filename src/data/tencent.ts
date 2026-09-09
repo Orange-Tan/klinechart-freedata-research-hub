@@ -1,6 +1,9 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
 
+/** 腾讯原生支持的周期（1m/5m/15m/1h 走 mkline，1d 走 fqkline；4h 无原生接口） */
+const TENCENT_PERIODS: readonly KlinePeriod[] = ['1m', '5m', '15m', '1h', '1d'];
+
 /**
  * 腾讯财经 A 股行情数据源（默认数据源）。
  *
@@ -11,6 +14,8 @@ import { searchAStock } from './aShareSearch';
  *     后者对分钟接口 301 跳走）
  *      param={sym},m{1|5|15|60|240},,{count}  → data[sym].m{...}，行
  *      [YYYYMMDDHHMM, open, close, high, low, volume, {}, amount]
+ *      ⚠️ 实测（2026-09）：m240（4h）返回 {"code":-1,"msg":"param error"}，
+ *      腾讯原生不提供 4 小时分钟线 → 不从 supportedPeriods 暴露 4h。
  *  - 实时：`qt.gtimg.cn/q={sym}`，GBK 编码（浏览器按 charset 自动解），
  *      v_{sym}="1~名称~代码~现价~昨收~今开~..."
  *
@@ -41,6 +46,9 @@ function isAShareSymbol(symbol: string): boolean {
 export class TencentDataSource implements KlineDataSource {
   readonly id = 'tencent';
   readonly label = '腾讯财经';
+
+  /** 腾讯原生支持 1m/5m/15m/1h/1d（4h=m240 实测 param error，不暴露） */
+  readonly supportedPeriods: readonly KlinePeriod[] = TENCENT_PERIODS;
 
   async fetchKlines(symbol: string, period: KlinePeriod, limit = 300): Promise<OHLCV[]> {
     if (!isAShareSymbol(symbol)) {

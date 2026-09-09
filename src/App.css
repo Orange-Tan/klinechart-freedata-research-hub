@@ -368,6 +368,35 @@ body {
   color: #f0b4b4;
 }
 
+/* 图表卡片顶部异常提醒条：数据源不支持当前周期、图表无法加载时显示 */
+.chart-warn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #f0b4b4;
+  background: #2a1717;
+  border-bottom: 1px solid #5a2d2d;
+}
+
+.chart-warn-btn {
+  flex: 0 0 auto;
+  background: #3d2222;
+  color: #f0b4b4;
+  border: 1px solid #6a3a3a;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chart-warn-btn:hover {
+  background: #4a2a2a;
+  border-color: #8a4a4a;
+}
+
 /* 图表网格 */
 .grid {
   flex: 1;

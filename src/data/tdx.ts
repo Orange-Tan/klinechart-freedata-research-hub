@@ -14,6 +14,9 @@ export class TdxDataSource implements KlineDataSource {
   readonly id = 'tdx';
   readonly label = '通达信';
 
+  /** 通达信浏览器端不可用（TCP 私有协议），不声明任何支持周期 → 周期下拉为空 */
+  readonly supportedPeriods: readonly KlinePeriod[] = [];
+
   private async unavailable(): Promise<never> {
     throw new Error('通达信行情走 TCP 私有协议，浏览器无法直连，需服务端中转（如 tdx 网关）。');
   }

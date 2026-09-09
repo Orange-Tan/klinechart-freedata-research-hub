@@ -1,4 +1,5 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
+import { PERIOD_ALL } from '../types/ohlcv';
 
 /** Binance K 线周期 → API interval 参数 */
 const INTERVAL: Record<KlinePeriod, string> = {
@@ -25,6 +26,9 @@ const INTERVAL: Record<KlinePeriod, string> = {
 export class BinanceDataSource implements KlineDataSource {
   readonly id = 'binance';
   readonly label = 'Binance 公开行情';
+
+  /** Binance 对全部 6 个周期都有原生支持（1m/5m/15m/1h/4h/1d） */
+  readonly supportedPeriods: readonly KlinePeriod[] = PERIOD_ALL;
 
   private readonly baseUrl = 'https://data-api.binance.vision';
 

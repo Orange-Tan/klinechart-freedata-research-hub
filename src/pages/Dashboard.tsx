@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { OHLCV, KlinePeriod, StockResult } from '../types/ohlcv';
+import { PERIOD_LABEL, PERIOD_ALL } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
 import { LightweightChart } from '../components/charts/LightweightChart';
 import { KLineChart } from '../components/charts/KLineChart';
@@ -13,15 +14,6 @@ const LIBRARIES = [
   { id: 'hqchart', name: 'HQChart', Comp: HQChart },
   { id: 'echarts', name: 'ECharts', Comp: EChartsChart },
 ] as const;
-
-const PERIODS: { value: KlinePeriod; label: string }[] = [
-  { value: '1m', label: '1 分钟' },
-  { value: '5m', label: '5 分钟' },
-  { value: '15m', label: '15 分钟' },
-  { value: '1h', label: '1 小时' },
-  { value: '4h', label: '4 小时' },
-  { value: '1d', label: '日线' },
-];
 
 /** 各数据源的默认标的面板（选中该源时展示的标的列表 + 默认选中） */
 const SOURCE_DEFAULTS: Record<
@@ -100,8 +92,19 @@ export function Dashboard() {
   const [historyLimit, setHistoryLimit] = useState<number>(DEFAULT_HISTORY_LIMIT);
 
   const source = useMemo(() => getDataSource(sourceId), [sourceId]);
+  // 当前数据源支持的周期（不声明则默认全部支持）
+  const supported = useMemo<readonly KlinePeriod[]>(
+    () => source.supportedPeriods ?? PERIOD_ALL,
+    [source],
+  );
   const [history, setHistory] = useState<OHLCV[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // 当前 (source,symbol,period) 组合的数据是否已成功加载。
+  // 当周期不受支持（或仍在加载中/加载失败）时，用它驱动卡片顶部的异常文字提醒。
+  const [loaded, setLoaded] = useState(false);
+  // 图表卡片异常提示：本周期不受数据源支持且图表没能正常出图。
+  // 只在"用户刚切换过去、数据还没到位"的窗口期显示；数据就绪后自动消失。
+  const showWarn = supported.length > 0 && !supported.includes(period) && !loaded;
 
   // 顶部搜索框状态
   const [query, setQuery] = useState('');
@@ -109,7 +112,8 @@ export function Dashboard() {
   const [results, setResults] = useState<StockResult[]>([]);
   const [searching, setSearching] = useState(false);
 
-  // 切数据源时重置到该源的默认标的，并清掉残留的搜索词/结果
+  // 切数据源时重置到该源的默认标的，并清掉残留的搜索词/结果；
+  // 周期回退到该源的首个支持周期（source.supportedPeriods 或 PERIOD_ALL[0] = 1m）
   function handleSourceChange(next: DataSourceId) {
     const d = SOURCE_DEFAULTS[next];
     setSourceId(next);
@@ -117,6 +121,10 @@ export function Dashboard() {
     setSymbolLabel(d.label);
     setQuery('');
     setResults([]);
+    const ds = getDataSource(next);
+    const periods = ds.supportedPeriods && ds.supportedPeriods.length > 0 ? ds.supportedPeriods : PERIOD_ALL;
+    const target = periods.includes(period) ? period : periods[0];
+    if (target !== period) setPeriod(target);
   }
 
   // 搜索（仅支持搜索的源；TDX/无搜索能力时静默跳过）
@@ -162,6 +170,7 @@ export function Dashboard() {
     let cancelled = false;
     setError(null);
     setHistory([]);
+    setLoaded(false); // 新一轮加载开始，卡片进入"未就绪"窗口
 
     // 历史加载完成标记。竞态根因：订阅轮询（limit=2）可能比历史请求先返回，
     // 把"最新一根未收 K 线"当首批数据 setHistory([bar])，图表先画 1 根；
@@ -176,6 +185,7 @@ export function Dashboard() {
       .then((bars) => {
         if (cancelled) return;
         historyLoaded = true;
+        setLoaded(true); // 数据成功送达：异常提醒自动消失
         setHistory(bars);
       })
       .catch((err: unknown) => {
@@ -241,10 +251,13 @@ export function Dashboard() {
           </label>
           <label>
             周期
-            <select value={period} onChange={(e) => setPeriod(e.target.value as KlinePeriod)}>
-              {PERIODS.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
+            <select
+              value={supported.includes(period) ? period : ''}
+              onChange={(e) => setPeriod(e.target.value as KlinePeriod)}
+            >
+              {supported.map((p) => (
+                <option key={p} value={p}>
+                  {PERIOD_LABEL[p]}
                 </option>
               ))}
             </select>
@@ -309,6 +322,21 @@ export function Dashboard() {
                 {/* 视口隐藏的 bars 计数：纯渲染进度信号，供自动化测试读取，不占视觉空间 */}
                 <span className="sr-only bars-count">{history.length} bars</span>
               </header>
+              {/* 异常加载提醒：本数据源不支持该周期时，卡片顶部出现醒目文字 + 一键回退 */}
+              {showWarn && (
+                <div className="chart-warn">
+                  <span>
+                    当前数据源（{source.label}）不支持 {PERIOD_LABEL[period]}（{period}）周期，图表无法加载
+                  </span>
+                  <button
+                    type="button"
+                    className="chart-warn-btn"
+                    onClick={() => setPeriod(supported[0])}
+                  >
+                    切换为 {PERIOD_LABEL[supported[0]]}
+                  </button>
+                </div>
+              )}
               <div className="chart-wrap">
                 <Comp
                   data={history}

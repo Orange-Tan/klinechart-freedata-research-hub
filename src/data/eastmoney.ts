@@ -1,6 +1,8 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
 
+const EASTMONEY_PERIODS: readonly KlinePeriod[] = ['1m', '5m', '15m', '1h', '1d'];
+
 /**
  * 东方财富 A 股行情数据源。
  *
@@ -37,6 +39,9 @@ function toSecid(symbol: string): string {
 export class EastMoneyDataSource implements KlineDataSource {
   readonly id = 'eastmoney';
   readonly label = '东方财富';
+
+  /** 东财无 240 分钟周期（分钟只到 60），4h 用 60 分钟近似 → 不作为原生支持周期 */
+  readonly supportedPeriods: readonly KlinePeriod[] = EASTMONEY_PERIODS;
 
   async fetchKlines(symbol: string, period: KlinePeriod, limit = 300): Promise<OHLCV[]> {
     const secid = toSecid(symbol);
