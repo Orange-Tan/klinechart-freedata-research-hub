@@ -3,6 +3,9 @@
    页下是分节的库文档。颜色全部取自 App.css 全局主题 tokens。 */
 
 .lw-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -99,17 +102,37 @@
   accent-color: #26a69a;
 }
 
-/* ===== 大图 stage ===== */
+/* 勾选态：胶囊描边与底色同步点亮，一眼可辨哪个功能开着 */
+.lw-toggle.on {
+  border-color: #26a69a;
+  color: #d7dbe4;
+  background: rgba(38, 166, 154, 0.12);
+}
+
+/* ===== 大图 stage =====
+   注意：.lw-page 是列 flex，stage 自身 overflow:hidden 会把 flex 自动最小
+   尺寸压成 0，再被 flex-shrink 压缩到只剩边框（图表"消失"的根因）。
+   flex: 0 0 auto 阻止压缩；aspect-ratio 保证 16:9。 */
 .lw-stage {
   position: relative;
+  flex: 0 0 auto;
+  aspect-ratio: 16 / 9;
   background: #111625;
   border: 1px solid #1c2333;
   border-radius: 10px;
   overflow: hidden;
 }
 
+/* 图表容器：铺满 stage 的可用宽高 */
 .lw-stage .chart-container {
-  height: 640px;
+  width: 100%;
+  height: 100%;
+}
+
+/* 图表挂载层：占满容器，autoSize 的 ResizeObserver 观察它 */
+.lw-stage .chart-fill {
+  width: 100%;
+  height: 100%;
 }
 
 .lw-loading {
@@ -218,7 +241,9 @@
 }
 
 @media (max-width: 900px) {
-  .lw-stage .chart-container {
-    height: 480px;
+  /* 窄屏 stage 高度改由 16:9 比例换算：高度 = 宽度 / 16 * 9，
+     避免大图在窄容器下占据过高版面 */
+  .lw-stage {
+    aspect-ratio: 16 / 9;
   }
 }

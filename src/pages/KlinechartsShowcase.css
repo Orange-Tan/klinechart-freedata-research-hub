@@ -9,6 +9,9 @@
    ============================================================ */
 
 .kc-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   max-width: 1080px;
   margin: 0 auto;
   padding: 28px 24px 64px;
@@ -125,7 +128,7 @@
 /* ===== 大图舞台 ===== */
 .kc-stage {
   position: relative;
-  height: 640px;
+  height: 420px;
   background: #111625;
   border: 1px solid #1c2333;
   border-radius: 10px;
@@ -338,6 +341,6 @@
   }
 
   .kc-stage {
-    height: 520px;
+    height: 360px;
   }
 }

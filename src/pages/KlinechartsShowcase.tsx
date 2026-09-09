@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { useKlineData } from '../hooks/useKlineData';
 import type { KlinePeriod } from '../types/ohlcv';
-import { PERIOD_LABEL, PERIOD_ALL } from '../types/ohlcv';
+import { PERIOD_LABEL } from '../types/ohlcv';
+import { dataSourceList, getDataSource, type DataSourceId } from '../data';
+import { SHOWCASE_SOURCE_DEFAULTS, supportedPeriodsOf } from './showcaseShared';
 import {
   KlinechartsShowcaseChart,
   toPeriod,
@@ -9,9 +11,6 @@ import {
 } from '../components/charts/KlinechartsShowcaseChart';
 import type { CandleType } from 'klinecharts';
 import './KlinechartsShowcase.css';
-
-/** 页首大图可切换的周期列表（Binance 全周期演示） */
-const PERIOD_OPTIONS = PERIOD_ALL;
 
 /** 页首大图需要 ≥ MIN_BARS 根历史才敢展示全量功能（指标/画线不空洞） */
 const MIN_BARS = 60;
@@ -67,12 +66,15 @@ function periodLabelOf(period: KlinePeriod): string {
  * 讲解并给出与 lightweight-charts 的对比结论。
  */
 export function KlinechartsShowcase() {
+  const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
   const [period, setPeriod] = useState<KlinePeriod>('1d');
   const chartRef = useRef<KlinechartsShowcaseChartRef>(null);
+  const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
+  const periodOptions = supportedPeriodsOf(sourceId);
 
   const { history, error, source } = useKlineData({
-    sourceId: 'binance',
-    symbol: 'BTCUSDT',
+    sourceId,
+    symbol: def.symbol,
     period,
     historyLimit: 500,
   });
@@ -132,6 +134,17 @@ export function KlinechartsShowcase() {
   const pushStatus = (message: string, kind: 'info' | 'ok' | 'warn' = 'info') => {
     setStatus({ message, kind });
   };
+
+  // —— 数据源切换 ——
+
+  /** 切换数据源：标的重置为该源默认，周期回退到该源支持的第一个周期 */
+  function handleSourceChange(next: DataSourceId) {
+    setSourceId(next);
+    const options = supportedPeriodsOf(next);
+    if (!options.includes(period)) setPeriod(options[0]);
+    setCrosshairData(null);
+    pushStatus(`数据源已切换为 ${getDataSource(next).label}`, 'info');
+  }
 
   // —— 控制栏动作 ——
 
@@ -262,9 +275,22 @@ export function KlinechartsShowcase() {
       <div className="kc-controls">
         <div className="kc-group">
           <label className="kc-field">
+            <span className="kc-field-name">数据源</span>
+            <select value={sourceId} onChange={(e) => handleSourceChange(e.target.value as DataSourceId)}>
+              {dataSourceList.map((ds) => (
+                <option key={ds.id} value={ds.id}>
+                  {ds.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="kc-group">
+          <label className="kc-field">
             <span className="kc-field-name">周期</span>
             <select value={period} onChange={(e) => changePeriod(e.target.value as KlinePeriod)}>
-              {PERIOD_OPTIONS.map((p) => (
+              {periodOptions.map((p) => (
                 <option key={p} value={p}>
                   {PERIOD_LABEL[p]}
                 </option>
@@ -360,7 +386,7 @@ export function KlinechartsShowcase() {
 
       {error ? (
         <div className="error-panel">
-          无法加载 {source.label} BTCUSDT {periodLabelOf(period)} 数据：{error}
+          无法加载 {source.label} {def.label} {periodLabelOf(period)} 数据：{error}
         </div>
       ) : (
         <>
@@ -368,7 +394,7 @@ export function KlinechartsShowcase() {
             <KlinechartsShowcaseChart
               ref={chartRef}
               data={history}
-              symbol="BTCUSDT"
+              symbol={def.symbol}
               period={toPeriod(period)}
               live
               onCrosshair={(data) => crosshairCbRef.current(data as unknown)}

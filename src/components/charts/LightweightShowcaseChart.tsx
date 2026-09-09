@@ -9,6 +9,7 @@ import {
   BaselineSeries,
   ColorType,
   LineStyle,
+  LineType,
   CrosshairMode,
   createTextWatermark,
   createSeriesMarkers,
@@ -96,13 +97,13 @@ export const LightweightShowcaseChart = forwardRef<
     data,
     symbol,
     live = true,
-    indicators = true,
-    markers = true,
-    watermark = true,
-    trendLine = true,
-    priceLine = true,
-    extraPanes = true,
-    seriesTypes = true,
+    indicators = false,
+    markers = false,
+    watermark = false,
+    trendLine = false,
+    priceLine = false,
+    extraPanes = false,
+    seriesTypes = false,
   },
   ref,
 ) {
@@ -176,6 +177,11 @@ export const LightweightShowcaseChart = forwardRef<
         vertLines: { color: '#1c2333' },
         horzLines: { color: '#1c2333' },
       },
+      // 启用鼠标滚轮缩放与拖拽平移（handleScroll/handleScale 的可交互能力演示，
+      // 也是 TimeScale API 平移缩放的前提，配合下方 scrollToRealTime 回到最新）
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+      kineticScroll: { touch: true, mouse: false },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: { color: '#3a4152', width: 1, style: LineStyle.Dashed },
@@ -200,7 +206,9 @@ export const LightweightShowcaseChart = forwardRef<
       },
     });
 
-    // 主图 K 线（paneIndex=0 显式放回主图；主图即 panes()[0]）
+    // 主图 K 线（paneIndex=0 显式放回主图；主图即 panes()[0]）。
+    // 开启 lastValueVisible（最后价标签）、priceLineVisible（跟随最新价的价格线）、
+    // title（序列名，显示在最后价标签旁）——都是 SeriesOptionsCommon 的常用项。
     const candle = chart.addSeries(
       CandlestickSeries,
       {
@@ -210,6 +218,10 @@ export const LightweightShowcaseChart = forwardRef<
         borderDownColor: UPDOWN_COLORS.down,
         wickUpColor: UPDOWN_COLORS.up,
         wickDownColor: UPDOWN_COLORS.down,
+        lastValueVisible: true,
+        priceLineVisible: true,
+        priceLineColor: '#e0af68',
+        title: '主图K线',
       },
       0,
     );
@@ -233,14 +245,19 @@ export const LightweightShowcaseChart = forwardRef<
       HistogramSeries,
       {
         color: '#e0af68',
-        priceFormat: { type: 'price' },
+        priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
         priceScaleId: 'extra',
       },
       2,
     );
 
-    // 其他序列类型：叠加在主图（paneIndex=0）
-    const line = chart.addSeries(LineSeries, { color: '#7aa2f7', lineWidth: 1, priceScaleId: 'main' }, 0);
+    // 其他序列类型：叠加在主图（paneIndex=0）。
+    // lineWidth 之外再演示 lastValueVisible 等公共选项与 LineType（曲线 vs 阶梯）
+    const line = chart.addSeries(
+      LineSeries,
+      { color: '#7aa2f7', lineWidth: 1, priceScaleId: 'main', lineType: LineType.WithSteps, lastValueVisible: true, title: '收盘' },
+      0,
+    );
     const area = chart.addSeries(
       AreaSeries,
       {
@@ -379,7 +396,8 @@ export const LightweightShowcaseChart = forwardRef<
       for (let i = startIdx; i < data.length; i++) {
         candle.update(toCandle(data[i]));
         volumeRef.current?.update(toVolume(data[i]));
-        extraRef.current?.update(toExtra(data[i]));
+        // 附加面板若关闭，不喂增量（避免空序列上冒孤立点）
+        if (featRef.current.extraPanes) extraRef.current?.update(toExtra(data[i]));
       }
       updateOverlaySeries(data, overlayRefs);
       lastTimeRef.current = data[data.length - 1].time;
@@ -400,19 +418,19 @@ export const LightweightShowcaseChart = forwardRef<
     chartRef.current?.timeScale().scrollToRealTime();
   }, [symbol, data]);
 
-  // 面板高度演示：成交量 pane 保持固定高度（setHeight 用法）。
-  // 同时设置副图价格刻度的 scaleMargins —— 取副图 scale 须经
-  // chart.panes()[paneIndex].priceScale(id)，chart.priceScale(id) 只查主图。
+  // 面板布局：主图 pane 用 setStretchFactor 给更大纵向权重；成交量 pane 保持
+  // 固定高度（setHeight 用法），并设置其价格刻度 scaleMargins（取副图 scale
+  // 须经 chart.panes()[paneIndex].priceScale(id)，chart.priceScale(id) 只查主图）。
+  // 附加演示面板的显隐由「多面板」开关控制，见 feature 同步 effect（默认折叠）。
   useEffect(() => {
     const chart = chartRef.current;
+    const mainPane = mainPaneRef.current;
     const volumePane = volumePaneRef.current;
-    if (!volumePane) return;
+    if (!chart || !mainPane || !volumePane) return;
+    mainPane.setStretchFactor(4);
+    volumePane.setStretchFactor(1);
     volumePane.setHeight(140);
-    // 主图 pane 保持拉伸；附加 pane 固定 100px，让三块面板高度有区分度
-    const extraPane = chart?.panes()[2];
-    extraPane?.setHeight(100);
-    chart?.panes()[1].priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
-    chart?.panes()[2].priceScale('extra').applyOptions({ scaleMargins: { top: 0.6, bottom: 0.1 } });
+    chart.panes()[1].priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
   }, []);
 
   // 功能开关同步：feature 关闭时卸载对应序列/插件，开启时重新填充
@@ -478,11 +496,19 @@ export const LightweightShowcaseChart = forwardRef<
       }
     }
 
-    // 附加面板
+    // 附加面板：开启时填入涨跌幅直方图数据、固定 100px 高 + scaleMargins；
+    // 关闭时清空数据并把面板折叠（setHeight(0) 重新启用拉伸，stretchFactor 0
+    // 不占高度，避免默认状态下底部留一条空面板）
+    const extraPane = chart?.panes()[2];
     if (f.extraPanes) {
       extraRef.current?.setData(dataRef.current.map(toExtra));
+      extraPane?.setHeight(100);
+      extraPane?.setStretchFactor(1);
+      chart?.panes()[2].priceScale('extra').applyOptions({ scaleMargins: { top: 0.6, bottom: 0.1 } });
     } else {
       extraRef.current?.setData([]);
+      extraPane?.setHeight(0);
+      extraPane?.setStretchFactor(0);
     }
   }, [indicators, markers, watermark, trendLine, priceLine, extraPanes, seriesTypes]);
 
@@ -493,7 +519,11 @@ export const LightweightShowcaseChart = forwardRef<
     },
   }), []);
 
-  return <div ref={containerRef} className="chart-container" />;
+  return (
+    <div className="chart-container">
+      <div ref={containerRef} className="chart-fill" />
+    </div>
+  );
 });
 
 /** 叠加序列所需的全部 refs，打包传参给模块级工具函数，避免闭包引用组件作用域变量 */
@@ -590,27 +620,36 @@ function calcMA(data: OHLCV[], n: number): LineData[] {
   return out;
 }
 
-/** 增量更新叠加序列（指标/序列类型只更新最后一根，避免每次全量 setData 的闪烁） */
+/** 增量更新叠加序列（指标/序列类型只更新最后一根，避免每次全量 setData 的闪烁）。
+    注意：所有叠加更新都必须以 feat 开关为前提——若开关已关但数据还在追加，
+    对空序列 update() 会凭空冒出一个孤立数据点，默认全关时会在图上画出杂点。 */
 function updateOverlaySeries(data: OHLCV[], refs: OverlayRefs) {
+  const f = refs.feat.current;
   const last = data[data.length - 1];
   const t = (last.time / 1000) as UTCTimestamp;
   // 均线增量：重算最后一段窗口，对最后一根 update
-  const ma5 = refs.ma5.current;
-  if (ma5) {
-    const tail = calcMA(data, 5);
-    if (tail.length) ma5.update(tail[tail.length - 1]);
+  if (f.indicators) {
+    const ma5 = refs.ma5.current;
+    if (ma5) {
+      const tail = calcMA(data, 5);
+      if (tail.length) ma5.update(tail[tail.length - 1]);
+    }
   }
   // 其余叠加序列直接 update 最后一根
-  const line = refs.line.current;
-  if (line) line.update({ time: t, value: last.close });
-  const area = refs.area.current;
-  if (area) area.update({ time: t, value: last.high });
-  const bar = refs.bar.current;
-  if (bar) bar.update(toBar(last));
-  const baseline = refs.baseline.current;
-  if (baseline) baseline.update({ time: t, value: last.close });
-  const extra = refs.extra.current;
-  if (extra) extra.update(toExtra(last));
+  if (f.seriesTypes) {
+    const line = refs.line.current;
+    if (line) line.update({ time: t, value: last.close });
+    const area = refs.area.current;
+    if (area) area.update({ time: t, value: last.high });
+    const bar = refs.bar.current;
+    if (bar) bar.update(toBar(last));
+    const baseline = refs.baseline.current;
+    if (baseline) baseline.update({ time: t, value: last.close });
+  }
+  if (f.extraPanes) {
+    const extra = refs.extra.current;
+    if (extra) extra.update(toExtra(last));
+  }
 }
 
 /** 同步所有叠加序列（全量模式） */

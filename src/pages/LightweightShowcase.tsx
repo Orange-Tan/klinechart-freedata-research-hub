@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react';
 import { useKlineData } from '../hooks/useKlineData';
-import { PERIOD_ALL, PERIOD_LABEL } from '../types/ohlcv';
+import { PERIOD_LABEL } from '../types/ohlcv';
 import type { KlinePeriod } from '../types/ohlcv';
+import { dataSourceList, type DataSourceId } from '../data';
+import { SHOWCASE_SOURCE_DEFAULTS, supportedPeriodsOf } from './showcaseShared';
 import {
   LightweightShowcaseChart,
   type LightweightShowcaseChartRef,
 } from '../components/charts/LightweightShowcaseChart';
-
-/** 页首大图可切换的周期列表（Binance 全周期演示） */
-const PERIOD_OPTIONS = PERIOD_ALL;
+import './LightweightShowcase.css';
 
 /** 页首大图需要 ≥ MIN_BARS 根历史才敢展示全量功能（指标/标记/画线不空洞） */
 const MIN_BARS = 60;
@@ -18,12 +18,15 @@ const MIN_BARS = 60;
  * 页下是对这个库所有功能的详细中文说明。
  */
 export function LightweightShowcase() {
+  const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
   const [period, setPeriod] = useState<KlinePeriod>('1d');
   const chartRef = useRef<LightweightShowcaseChartRef>(null);
+  const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
+  const periodOptions = supportedPeriodsOf(sourceId);
 
   const { history, error, source } = useKlineData({
-    sourceId: 'binance',
-    symbol: 'BTCUSDT',
+    sourceId,
+    symbol: def.symbol,
     period,
     historyLimit: 500,
   });
@@ -31,14 +34,22 @@ export function LightweightShowcase() {
   const bars = history.length;
   const ready = bars >= MIN_BARS;
 
-  // 大图功能开关（对应下方文档的各功能分节）
-  const [indicators, setIndicators] = useState(true);
-  const [markers, setMarkers] = useState(true);
-  const [watermark, setWatermark] = useState(true);
-  const [trendLine, setTrendLine] = useState(true);
-  const [priceLine, setPriceLine] = useState(true);
-  const [extraPanes, setExtraPanes] = useState(true);
-  const [seriesTypes, setSeriesTypes] = useState(true);
+  // 数据源切换：标的重置为该源默认；周期回退到该源支持的第一个周期
+  function handleSourceChange(next: DataSourceId) {
+    setSourceId(next);
+    const options = supportedPeriodsOf(next);
+    if (!options.includes(period)) setPeriod(options[0]);
+  }
+
+  // 大图功能开关（对应下方文档的各功能分节）：默认全关，
+  // 避免一进来就叠满指标/标记/水印/画线，让用户按需勾选体验
+  const [indicators, setIndicators] = useState(false);
+  const [markers, setMarkers] = useState(false);
+  const [watermark, setWatermark] = useState(false);
+  const [trendLine, setTrendLine] = useState(false);
+  const [priceLine, setPriceLine] = useState(false);
+  const [extraPanes, setExtraPanes] = useState(false);
+  const [seriesTypes, setSeriesTypes] = useState(false);
 
   const periodLabel = PERIOD_LABEL[period];
 
@@ -47,13 +58,23 @@ export function LightweightShowcase() {
       <header className="lw-hero">
         <div className="lw-hero-head">
           <h1>Lightweight-Charts 详解</h1>
-          <p>TradingView 出品的轻量级图表库，本页把它的全部可视化能力开在一张图上，下方为全量说明文档。</p>
+          <p>TradingView 出品的轻量级图表库，默认只展示核心 K 线与成交量，勾选上方开关逐项体验指标、标记、水印、画线与多面板能力，下方为全量说明文档。</p>
         </div>
         <div className="lw-controls">
           <label className="lw-field">
+            数据源
+            <select value={sourceId} onChange={(e) => handleSourceChange(e.target.value as DataSourceId)}>
+              {dataSourceList.map((ds) => (
+                <option key={ds.id} value={ds.id}>
+                  {ds.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="lw-field">
             周期
             <select value={period} onChange={(e) => setPeriod(e.target.value as KlinePeriod)}>
-              {PERIOD_OPTIONS.map((p) => (
+              {periodOptions.map((p) => (
                 <option key={p} value={p}>
                   {PERIOD_LABEL[p]}
                 </option>
@@ -70,7 +91,7 @@ export function LightweightShowcase() {
               { key: 'priceLine', label: '价格线', on: priceLine, set: setPriceLine },
               { key: 'extraPanes', label: '多面板', on: extraPanes, set: setExtraPanes },
             ].map(({ key, label, on, set }) => (
-              <label className="lw-toggle" key={key}>
+              <label className={`lw-toggle${on ? ' on' : ''}`} key={key}>
                 <input type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} />
                 {label}
               </label>
@@ -81,14 +102,14 @@ export function LightweightShowcase() {
 
       {error ? (
         <div className="error-panel">
-          无法加载 {source.label} BTCUSDT {periodLabel} 数据：{error}
+          无法加载 {source.label} {def.label} {periodLabel} 数据：{error}
         </div>
       ) : (
         <section className="lw-stage">
           <LightweightShowcaseChart
             ref={chartRef}
             data={history}
-            symbol="BTCUSDT"
+            symbol={def.symbol}
             live
             indicators={indicators}
             markers={markers}
@@ -196,6 +217,14 @@ function LightweightDocs() {
         <p>
           本页大图把折线/面积/柱状/基线四种同时叠在主图 K 线之上，并把直方图用作成交量与
           附加面板——同一份数据可以按任意序列类型重复绘制，这正是“序列与数据分离”的体现。
+        </p>
+        <p>
+          序列选项里有几个常用的 <code>SeriesOptionsCommon</code> 公共项：<code>title</code>
+          （序列名，显示在最后价标签旁）、<code>lastValueVisible</code>（是否显示最后价
+          标签）、<code>priceLineVisible</code>（跟随最新价的虚线）。本页主图 K 线
+          <code>title: '主图K线'</code>、收盘线 <code>title: '收盘'</code> 均开启了这三项。
+          另外 <code>LineSeries</code> 的 <code>lineType</code> 可切换画线风格——本页收盘线
+          用 <code>LineType.WithSteps</code> 画成阶梯线（与均线的光滑线并排，肉眼可辨差异）。
         </p>
       </section>
 
