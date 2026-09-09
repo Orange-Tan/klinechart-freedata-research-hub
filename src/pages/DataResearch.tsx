@@ -19,7 +19,7 @@ const ROLE_CLS: Record<DataSourceInfo['role'], string> = {
 
 /**
  * 状态徽标：图标 + 文案（直接渲染成一个带状态 class 的徽标）。
- * 图标统一走 Iconify（加载失败自动降级为 emoji），检测中的 spinner 图标附加 spin class 做旋转动画。
+ * 图标统一走本地打包的 Phosphor 图标，检测中的 spinner 图标附加 spin class 做旋转动画。
  */
 function StatusLabel({
   icon,

@@ -22,7 +22,7 @@ function MaintainLabel({ status }: { status: string }) {
 
 /**
  * 功能矩阵单元格：数据里以 emoji 前缀标记优劣（✅ 优 / ❌ 缺 / ⚠️ 中），
- * 渲染时把前缀转成 Iconify 图标 + 语义配色 class（ok/fail/warn），
+ * 渲染时把前缀转成 Phosphor 图标 + 语义配色 class（ok/fail/warn），
  * 无前缀的纯文本（如"优"/"良"）则不带图标。单表声明避免两处映射不同步。
  */
 const MATRIX_META = {

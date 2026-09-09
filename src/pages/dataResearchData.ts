@@ -9,7 +9,7 @@ export type MarketId = 'astock' | 'us' | 'crypto' | 'futures' | 'fund';
 export interface MarketInfo {
   id: MarketId;
   label: string;
-  /** 市场区块标题图标（Iconify 图标名，取自 REPLACE_MAP 单一数据源） */
+  /** 市场区块标题图标（Phosphor 图标名，取自 REPLACE_MAP 单一数据源） */
   icon: ReturnType<typeof iconOf>;
   desc: string;
 }

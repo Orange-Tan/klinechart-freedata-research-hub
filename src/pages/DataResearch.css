@@ -83,7 +83,7 @@
   vertical-align: -0.15em;
 }
 
-/* 徽标/标题行内的 Iconify 图标容器：inline-flex 跟随文字对齐（复用样式） */
+/* 徽标/标题行内的图标容器：inline-flex 跟随文字对齐（复用样式） */
 .icon-cell {
   display: inline-flex;
   align-items: center;
@@ -321,7 +321,7 @@
   white-space: nowrap;
 }
 
-/* 状态图标（Iconify SVG）：跟随文字颜色，行内对齐 */
+/* 状态图标（Phosphor SVG）：跟随文字颜色，行内对齐 */
 .st-icon {
   display: inline-flex;
   align-items: center;

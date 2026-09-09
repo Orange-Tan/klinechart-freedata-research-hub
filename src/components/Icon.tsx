@@ -1,111 +1,106 @@
-import type { ReactNode } from 'react';
-import { Icon as IconifyIcon, type IconProps as IconifyIconProps } from '@iconify/react';
+import type { CSSProperties, SVGProps } from 'react';
+import { PHOSPHOR_PATHS } from './phosphorIcons';
 
 /**
- * 全站统一图标组件（Iconify 在线 API 模式）。
+ * 全站统一图标组件（本地打包模式）。
  *
- * 运行时不落盘任何 SVG、不安装离线图标包：图标数据由 @iconify/react 在渲染时
- * 懒加载自 https://api.iconify.design（实际请求形如
- * `https://api.iconify.design/ph.json?icons=chart-bar`），首次加载后缓存。
- * 加载中 / 网络失败（图标数据拉不回来）时，用内置 fallback 降级：
- * 渲染 REPLACE_MAP 里该项的 fallback emoji。
+ * 所有图标都是 Phosphor 图标集（MIT 协议，https://phosphoricons.com/）的 SVG，
+ * 内联在 phosphorIcons.ts 里随应用一起打包 —— 不依赖任何在线图标 API，
+ * 断网/慢网/境内网络都不受影响，也不会出现"先 emoji 后 SVG"的闪烁。
  *
- * ## 版权
- * 使用 Phosphor（`ph:`）图标集 —— MIT 协议（https://phosphoricons.com/），
- * 可自由商用，保留本注释即可。图标字体本身不在本项目内分发（在线模式）。
- * 各图标含义见下方 REPLACE_MAP 映射表。
+ * 版权：Phosphor 为 MIT 协议，可自由商用，保留本注释与 phosphorIcons.ts 头部注释即可。
  */
 
 /**
- * 全站图标注册表（单一数据源）：每一项 = { icon: Iconify 图标名, fallback: 加载失败降级 emoji }。
- * 新增图标只需在此加一行：iconOf() 取图标名、Icon 组件取降级 emoji 都从这张表派生，
- * 不会出现两处映射不同步。
+ * 全站图标注册表（单一数据源）：key = 中文语义标签，value = Phosphor 图标名。
+ * 新增图标两步走：
+ *  1. 在 phosphorIcons.ts 里补一个图标名 → SVG path 的条目（从 phosphoricons.com 挑选）；
+ *  2. 在本表加一行 中文标签 → 图标名。
+ * Icon 组件的图标解析与 iconOf() 都从这张表派生，不会出现两处映射不同步。
+ * 全部图标保持 Phosphor 同一风格，禁止混入其它图标库造成风格不一致。
  */
 export const REPLACE_MAP = {
   // —— 侧边栏（App.tsx）——
-  '多图对比': { icon: 'ph:chart-bar', fallback: '📊' }, // 柱状图（对比看板）
-  '图表调研': { icon: 'ph:book-open', fallback: '📖' }, // 打开的书（调研报告）
-  '数据调研': { icon: 'ph:target', fallback: '📡' }, // 准星（连通性扫描/探测目标）
+  '多图对比': 'chart-bar', // 柱状图（对比看板）
+  '图表调研': 'book-open', // 打开的书（调研报告）
+  '数据调研': 'target', // 准星（连通性扫描/探测目标）
   // —— 折叠按钮（App.tsx）——
-  '侧栏展开': { icon: 'ph:caret-right', fallback: '»' },
-  '侧栏收起': { icon: 'ph:caret-left', fallback: '«' },
+  '侧栏展开': 'caret-right',
+  '侧栏收起': 'caret-left',
   // —— 数据调研页（DataResearch.tsx + dataResearchData.ts）——
-  '一键检测': { icon: 'ph:lightning', fallback: '⚡' },
-  '检测中': { icon: 'ph:spinner-gap', fallback: '⏳' }, // spinning 转圈
-  '连通': { icon: 'ph:check-circle', fallback: '✅' },
-  '失败': { icon: 'ph:x-circle', fallback: '❌' },
-  '需外网': { icon: 'ph:globe', fallback: '🌐' },
-  '需代理': { icon: 'ph:arrows-clockwise', fallback: '🔁' },
-  '需Key': { icon: 'ph:key', fallback: '🔑' },
+  '一键检测': 'lightning',
+  '检测中': 'spinner-gap', // spinning 转圈
+  '连通': 'check-circle',
+  '失败': 'x-circle',
+  '需外网': 'globe',
+  '需代理': 'arrows-clockwise',
+  '需Key': 'key',
   // —— 市场区块标题（dataResearchData.ts）——
-  'A股': { icon: 'ph:chart-line', fallback: '🇨🇳' }, // 折线（指数走势）
-  '美股': { icon: 'ph:currency-dollar', fallback: '🇺🇸' }, // 美元
-  '加密货币': { icon: 'ph:coins', fallback: '🪙' },
-  '期货': { icon: 'ph:cube', fallback: '📦' }, // 立方（期货交割品）
-  '基金': { icon: 'ph:bank', fallback: '🏦' }, // 银行（基金托管）
+  'A股': 'chart-line', // 折线（指数走势）
+  '美股': 'currency-dollar', // 美元
+  '加密货币': 'coins',
+  '期货': 'cube', // 立方（期货交割品）
+  '基金': 'bank', // 银行（基金托管）
   // —— 图表调研页（ResearchReport.tsx）——
-  // 维护状态圆点：在线时 SVG 靠 .maintain-label 上绿、.red 上红；
-  // 离线 fallback 必须用继承当前文字颜色的纯文本字符（●），
-  // 若用 🟢/🔴 这类自带颜色的 emoji，反向映射表按图标名去重后两个语义
-  // 条目只留一个 fallback，会把"维护活跃"也渲染成红点（语义反转）。
-  '维护活跃': { icon: 'ph:circle-fill', fallback: '●' },
-  '维护停更': { icon: 'ph:circle-fill', fallback: '●' },
-  '优点': { icon: 'ph:check-circle', fallback: '✅' },
-  '缺点': { icon: 'ph:x-circle', fallback: '❌' },
-  '警告': { icon: 'ph:warning', fallback: '⚠️' },
-  '星标': { icon: 'ph:star-fill', fallback: '★' },
+  '维护活跃': 'circle-fill',
+  '维护停更': 'circle-fill',
+  '优点': 'check-circle',
+  '缺点': 'x-circle',
+  '警告': 'warning',
+  '星标': 'star-fill',
 } as const;
 
-/** 图标名（形如 "ph:chart-bar"），即 REPLACE_MAP 各项的 icon 字段 */
-export type IconName = (typeof REPLACE_MAP)[keyof typeof REPLACE_MAP]['icon'];
-
-/** 图标名 → 降级 emoji（从 REPLACE_MAP 派生，保持单一数据源） */
-const ICON_FALLBACK = new Map<string, string>(
-  Object.values(REPLACE_MAP).map((e) => [e.icon, e.fallback] as const),
-);
+/** 图标名（Phosphor 图标，形如 "chart-bar"），即 REPLACE_MAP 各项的值 */
+export type IconName = (typeof REPLACE_MAP)[keyof typeof REPLACE_MAP];
 
 /**
- * 对外 props：与 @iconify/react 的 IconProps 兼容（透传全部 SVG props 与
- * Iconify 专属 props），只把 icon 收窄成本项目 REPLACE_MAP 里的图标名。
- * 额外支持 fallback 覆盖默认降级内容。
- *
- * 尺寸说明：@iconify/react 默认把图标高度设为 "1em"（宽度按比例算），
- * 因此尺寸跟随 CSS font-size 走；需要改尺寸时用 height/width 传 number（px）
- * 或带单位字符串，另一维度按宽高比自动算。
+ * 对外 props：透传全部 SVG props，只把图标名收窄成本项目 REPLACE_MAP 里的值。
+ * 尺寸说明：默认把 SVG 宽高设为 "1em"（跟随父元素 font-size），需要改尺寸时用
+ * width/height 传 number（px）或带单位字符串（沿用 @iconify/react 的尺寸习惯，
+ * 现有调用 height="1em" 等原样兼容）。
  */
-export interface IconProps extends Omit<IconifyIconProps, 'icon'> {
-  /** Iconify 图标名（形如 "ph:chart-bar"），见 REPLACE_MAP */
+export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
+  /** Phosphor 图标名（形如 "chart-bar"），见 REPLACE_MAP */
   icon: IconName;
-  /** 加载中/加载失败时显示的回退内容；不传则降级为对应 emoji */
-  fallback?: ReactNode;
+  /** 尺寸覆盖（宽高同时生效，保持图标 1:1 方形比例） */
+  size?: string | number;
+}
+
+/** 渲染一个 Phosphor 图标：把存储的 SVG path 字符串经 dangerouslySetInnerHTML 注入到 <path> */
+function Glyph({ path }: { path: string }) {
+  // path 形如 `<path fill="currentColor" d="..."/>`（见 phosphorIcons.ts），
+  // 内容来源是 phosphoricons.com 固定图标集的 d 值，属项目内受控数据。
+  return <path dangerouslySetInnerHTML={{ __html: path }} />;
 }
 
 /**
- * 图标组件：在线 Iconify + 加载失败降级。
- * 加载中 / 网络失败时显示 fallback（默认是对应 emoji），加载成功后渲染 SVG。
- * 默认尺寸 1em：跟随父元素 font-size，方便文字内嵌与统一缩放。
+ * 图标组件：本地 SVG 渲染（随应用打包，无任何网络请求）。
+ * 尺寸默认 1em：跟随父元素 font-size，方便文字内嵌与统一缩放。
+ * 颜色继承 currentColor，由父级 CSS 上色。
  */
-export function Icon({ icon, className, fallback, ...rest }: IconProps) {
-  const glyph = ICON_FALLBACK.get(icon);
-  const defaultFallback = glyph ? (
-    <span
-      className={className}
-      style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}
-    >
-      {glyph}
-    </span>
-  ) : (
-    // 无对应降级字符：占位空块（保持 1em 尺寸），避免出现空白图标或撑破布局
-    <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }} />
-  );
-
+export function Icon({ icon, className, style, size, width, height, ...rest }: IconProps) {
+  const path = PHOSPHOR_PATHS[icon];
+  if (!path) {
+    // 图标名不存在：渲染占位空块（保持 1em 尺寸），避免出现空白图标或撑破布局。
+    // 正常情况不会走到这里（REPLACE_MAP 的值都已在 phosphorIcons.ts 注册）。
+    return <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }} />;
+  }
+  const dim: CSSProperties = size
+    ? { width: size, height: size }
+    : { width: width ?? '1em', height: height ?? '1em' };
   return (
-    <IconifyIcon
-      icon={icon}
+    <svg
       className={className}
-      fallback={fallback ?? defaultFallback}
+      style={{ ...dim, ...style }}
+      viewBox="0 0 256 256"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-hidden="true"
+      focusable="false"
       {...rest}
-    />
+    >
+      <Glyph path={path} />
+    </svg>
   );
 }
 
@@ -113,8 +108,6 @@ export function Icon({ icon, className, fallback, ...rest }: IconProps) {
  * 便捷引用：从 REPLACE_MAP 里取图标名（带类型约束，确保是已声明过的 key）。
  * 例：`icon={iconOf('连通')}`。
  */
-export function iconOf<K extends keyof typeof REPLACE_MAP>(
-  key: K,
-): (typeof REPLACE_MAP)[K]['icon'] {
-  return REPLACE_MAP[key].icon;
+export function iconOf<K extends keyof typeof REPLACE_MAP>(key: K): (typeof REPLACE_MAP)[K] {
+  return REPLACE_MAP[key];
 }

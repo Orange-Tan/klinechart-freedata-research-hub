@@ -11,7 +11,7 @@ type PageId = 'dashboard' | 'report' | 'data';
  * 侧边栏快速切换的三个页面。
  * 切页时对应组件会卸载/重挂载：对比看板回到后台就停止 Binance 轮询订阅，
  * 再切回来重新拉取（数据新鲜且不浪费请求）。
- * 图标统一走 Iconify 在线图标（REPLACE_MAP 里维护中文标签 → { icon, fallback } 映射）。
+ * 图标统一走本地打包的 Phosphor 图标（REPLACE_MAP 里维护中文标签 → 图标名映射）。
  */
 const PAGES = [
   { id: 'dashboard', label: '多图对比', icon: iconOf('多图对比'), Comp: Dashboard },

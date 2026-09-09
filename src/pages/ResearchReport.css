@@ -133,7 +133,7 @@
   color: #9ece6a;
 }
 
-/* 维护状态徽标（Iconify 圆点 + 文本）：绿=活跃/商业产品，红=停更 */
+/* 维护状态徽标（Phosphor 圆点 + 文本）：绿=活跃/商业产品，红=停更 */
 .maintain-label {
   display: inline-flex;
   align-items: center;
@@ -145,7 +145,7 @@
   color: #f7768e;
 }
 
-/* 正文里标题/徽标行内的 Iconify 图标容器：跟随文字颜色，行内对齐 */
+/* 正文里标题/徽标行内的图标容器：跟随文字颜色，行内对齐 */
 .icon-cell {
   display: inline-flex;
   align-items: center;
