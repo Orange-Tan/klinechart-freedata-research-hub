@@ -66,11 +66,9 @@ export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   size?: string | number;
 }
 
-/** 渲染一个 Phosphor 图标：把存储的 SVG path 字符串经 dangerouslySetInnerHTML 注入到 <path> */
-function Glyph({ path }: { path: string }) {
-  // path 形如 `<path fill="currentColor" d="..."/>`（见 phosphorIcons.ts），
-  // 内容来源是 phosphoricons.com 固定图标集的 d 值，属项目内受控数据。
-  return <path dangerouslySetInnerHTML={{ __html: path }} />;
+/** 渲染一个 Phosphor 图标的 <path>（d 数据来自 phosphorIcons.ts，颜色用 currentColor 继承父级） */
+function Glyph({ d }: { d: string }) {
+  return <path d={d} fill="currentColor" />;
 }
 
 /**
@@ -79,8 +77,8 @@ function Glyph({ path }: { path: string }) {
  * 颜色继承 currentColor，由父级 CSS 上色。
  */
 export function Icon({ icon, className, style, size, width, height, ...rest }: IconProps) {
-  const path = PHOSPHOR_PATHS[icon];
-  if (!path) {
+  const d = PHOSPHOR_PATHS[icon];
+  if (!d) {
     // 图标名不存在：渲染占位空块（保持 1em 尺寸），避免出现空白图标或撑破布局。
     // 正常情况不会走到这里（REPLACE_MAP 的值都已在 phosphorIcons.ts 注册）。
     return <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }} />;
@@ -99,7 +97,7 @@ export function Icon({ icon, className, style, size, width, height, ...rest }: I
       focusable="false"
       {...rest}
     >
-      <Glyph path={path} />
+      <Glyph d={d} />
     </svg>
   );
 }

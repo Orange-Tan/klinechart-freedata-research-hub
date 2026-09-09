@@ -7,7 +7,7 @@
 同一份**实时 K 线数据**，同源喂给 **4 个开源图表库**横向评测渲染与交互差异；
 并内置 **5 大市场免费数据源调研** 与 **一键连通性检测**。
 
-<sub>Vite + React 19 + TypeScript · Binance 实时行情 · Playwright 冒烟测试</sub>
+<sub>Vite + React 19 + TypeScript · 腾讯/东方财富/币安多源实时行情 · Playwright 冒烟测试</sub>
 
 </div>
 
@@ -19,7 +19,7 @@
 |---|---|
 | 📊 **多图对比** | 同一份实时 K 线数据同源喂给 4 个库横向对比：渲染效果 / 交互差异 / 数据一致性 |
 | 📖 **图表调研** | 开源图表库选型调研报告（lightweight-charts / KLineChart / HQChart / ECharts / uPlot…），含功能矩阵、优缺点、技术路线建议 |
-| 📡 **数据调研** | A股 / 美股 / 加密货币 / 期货 / 基金 **五大市场 35 个可用免费数据源**（已剔除停服/反爬/不提供实时行情的源）按角色与历史 K 线能力排序，名称点击直达官网/开源仓库，**每源一键连通性检测 + 一键检测全部** |
+| 📡 **数据调研** | A股 / 美股 / 加密货币 / 期货 / 基金 **五大市场 40 个可用免费数据源**（已剔除停服/反爬/不提供实时行情的源）按角色与历史 K 线能力排序，名称点击直达官网/开源仓库，**每源一键连通性检测 + 一键检测全部** |
 
 ### 四大图表库
 
@@ -50,15 +50,21 @@
 src/
 ├── App.tsx                    # 侧边栏 + 三页切换（切页卸载/重挂载）
 ├── pages/
-│   ├── Dashboard.tsx          # 📊 多图对比（Binance 轮询订阅主逻辑）
+│   ├── Dashboard.tsx          # 📊 多图对比（多源轮询订阅主逻辑）
 │   ├── ResearchReport.tsx     # 📖 图表调研报告
 │   ├── DataResearch.tsx       # 📡 数据调研页（连通性检测）
-│   └── dataResearchData.ts    # 数据源元数据注册表（59 源，页面只展示 31 个可用源）
-├── components/charts/         # 4 库图表适配层（踩坑重灾区）
+│   └── dataResearchData.ts    # 数据源元数据注册表（61 源，页面只展示 40 个可用源）
+├── components/
+│   ├── Icon.tsx / phosphorIcons.ts  # 全站图标：本地打包 Phosphor 图标（MIT，不依赖在线 API）
+│   └── charts/               # 4 库图表适配层（踩坑重灾区）
 ├── data/
-│   ├── binance.ts             # 数据源适配器：REST + 2s 轮询 + 竞态守卫
-│   ├── connectivity.ts        # 连通性检测：fetch / JSONP / 服务端库判定
-│   └── index.ts               # 数据源注册表
+│   ├── tencent.ts            # 数据源适配器：腾讯财经（REST + 轮询 + 竞态守卫）
+│   ├── eastmoney.ts          # 东方财富数据源适配器
+│   ├── binance.ts            # 币安数据源适配器
+│   ├── tdx.ts                # 通达信数据源适配器（占位，浏览器端不可用）
+│   ├── aShareSearch.ts       # A 股搜索：东财 suggest JSONP + 腾讯 smartbox 双源兜底
+│   ├── connectivity.ts       # 连通性检测：fetch / JSONP / 服务端库判定
+│   └── index.ts              # 数据源注册表
 └── types/ohlcv.ts             # 全项目统一协议 OHLCV
 docs/
 ├── 图表库调研报告.md            # 选型调研（stars/协议/四大库优劣势）
@@ -126,7 +132,7 @@ npx playwright test  # 终端 2：冒烟测试
 
 ## 🛰️ 数据调研 & 连通性检测
 
-**五大市场免费数据源**（61 个调研，页面展示 34 个可用且提供实时行情的源，均实测）：
+**五大市场免费数据源**（61 个调研，页面展示 40 个可用且提供实时行情的源，均实测）：
 
 | 市场 | 首选 | 备选 | 接入方式 |
 |---|---|---|---|
@@ -153,7 +159,7 @@ npx playwright test  # 终端 2：冒烟测试
 
 ```
 App ── 侧边栏切页（卸载/重挂载）──► Dashboard
- ├─ useFetchKlines effect ──► Binance REST + 2s 轮询
+ ├─ useFetchKlines effect ──► 数据源 REST 拉历史 + 2s 轮询（腾讯/东财/币安可切换）
  ├─ setHistory(bars) ──► 每个 <Comp> 收到 data={history}
  └─ LIBRARIES 注册表（symbol/period/live 同源同步切给 4 库）
 ```
