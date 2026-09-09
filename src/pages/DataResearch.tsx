@@ -8,6 +8,7 @@ import {
   type DataSourceInfo,
 } from './dataResearchData';
 import { checkSource, type CheckResult, type CheckState } from '../data/connectivity';
+import { Icon, REPLACE_MAP, type IconName } from '../components/Icon';
 
 const ROLE_CLS: Record<DataSourceInfo['role'], string> = {
   主源: 'role-main',
@@ -15,6 +16,21 @@ const ROLE_CLS: Record<DataSourceInfo['role'], string> = {
   参考: 'role-ref',
   排除: 'role-ex',
 };
+
+/**
+ * 状态徽标：图标 + 文案。图标统一走 Iconify（加载失败自动降级为 emoji），
+ * 检测中的 spinner 图标附加 spin class 做旋转动画。
+ */
+function StatusLabel({ icon, spin, children }: { icon: IconName; spin?: boolean; children: string }) {
+  return (
+    <>
+      <span className={`st-icon${spin ? ' spin' : ''}`}>
+        <Icon icon={icon} height="1em" />
+      </span>
+      {children}
+    </>
+  );
+}
 
 /**
  * 是否具备可用实时行情（决定是否在表格中展示）：
@@ -80,20 +96,40 @@ export function DataResearch() {
             disabled={running}
             title="并发检测全部可直连数据源"
           >
-            {running ? '⏳ 检测中…' : '⚡ 一键检测全部'}
+            {running ? (
+              <StatusLabel icon={REPLACE_MAP['检测中']} spin>
+                检测中…
+              </StatusLabel>
+            ) : (
+              <StatusLabel icon={REPLACE_MAP['一键检测']}>一键检测全部</StatusLabel>
+            )}
           </button>
         </div>
         <div className="dresearch-legend">
-          <span className="st-checking">⏳ 检测中</span>
-          <span className="st-ok">✅ 连通</span>
-          <span className="st-fail">❌ 被拦截 / 失败</span>
+          <span className="st-checking">
+            <StatusLabel icon={REPLACE_MAP['检测中']} spin>
+              检测中
+            </StatusLabel>
+          </span>
+          <span className="st-ok">
+            <StatusLabel icon={REPLACE_MAP['连通']}>连通</StatusLabel>
+          </span>
+          <span className="st-fail">
+            <StatusLabel icon={REPLACE_MAP['失败']}>被拦截 / 失败</StatusLabel>
+          </span>
           <span className="st-na">— 浏览器不可直连</span>
           <span className="legend-split" />
           <span className="ab-direct">直连</span>
-          <span className="ab-vpn">🌐 需外网</span>
-          <span className="ab-proxy">🔁 需代理</span>
+          <span className="ab-vpn">
+            <StatusLabel icon={REPLACE_MAP['需外网']}>需外网</StatusLabel>
+          </span>
+          <span className="ab-proxy">
+            <StatusLabel icon={REPLACE_MAP['需代理']}>需代理</StatusLabel>
+          </span>
           <span className="ab-jsonp">JSONP</span>
-          <span className="ab-key">🔑 需Key</span>
+          <span className="ab-key">
+            <StatusLabel icon={REPLACE_MAP['需Key']}>需Key</StatusLabel>
+          </span>
           <span className="ab-server">服务端</span>
           <span className="legend-note">检测结果只说明“能不能从本机浏览器连到”，不代替真实取数验证</span>
         </div>
@@ -130,7 +166,10 @@ function MarketSection({
   return (
     <section className="report-section dresearch-section" data-market={market.id}>
       <h2>
-        {market.icon} {index}、{market.label}市场 <span className="dresearch-count">{list.length} 个数据源</span>
+        <span className="dresearch-market-icon">
+          <Icon icon={market.icon} height="1.1em" />
+        </span>
+        {index}、{market.label}市场 <span className="dresearch-count">{list.length} 个数据源</span>
       </h2>
       <p className="dresearch-market-desc">
         {market.desc} · 首选 <strong>{summary.primary}</strong>，备选 {summary.backup}（{summary.note}）
@@ -188,7 +227,16 @@ function MarketSection({
                       <div className="dresearch-tags">
                         {s.access.length === 0 && <span className="ab-none">不适用</span>}
                         {s.access.map((a) => (
-                          <span key={a} className={`ab ${ACCESS_META[a].cls}`} title={ACCESS_META[a].title}>
+                          <span
+                            key={a}
+                            className={`ab ${ACCESS_META[a].cls}`}
+                            title={ACCESS_META[a].title}
+                          >
+                            {ACCESS_META[a].icon && (
+                              <span className="ab-icon">
+                                <Icon icon={ACCESS_META[a].icon} height="1em" />
+                              </span>
+                            )}
                             {ACCESS_META[a].label}
                           </span>
                         ))}
@@ -230,9 +278,23 @@ function CheckCell({
   return (
     <div className="check-cell" data-state={state}>
       {state === 'idle' && <span className="st idle">未检测</span>}
-      {state === 'checking' && <span className="st checking">⏳ 检测中</span>}
-      {state === 'ok' && <span className="st ok">✅ 连通</span>}
-      {state === 'fail' && <span className="st fail">❌ 失败</span>}
+      {state === 'checking' && (
+        <span className="st checking">
+          <StatusLabel icon={REPLACE_MAP['检测中']} spin>
+            检测中
+          </StatusLabel>
+        </span>
+      )}
+      {state === 'ok' && (
+        <span className="st ok">
+          <StatusLabel icon={REPLACE_MAP['连通']}>连通</StatusLabel>
+        </span>
+      )}
+      {state === 'fail' && (
+        <span className="st fail">
+          <StatusLabel icon={REPLACE_MAP['失败']}>失败</StatusLabel>
+        </span>
+      )}
       <button
         type="button"
         className="check-btn"

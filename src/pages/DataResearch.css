@@ -14,6 +14,9 @@
 
 .dresearch-runall {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: #26a69a;
   color: #0b0e17;
   border: none;
@@ -67,6 +70,24 @@
   color: #6b7280;
   font-weight: 500;
   margin-left: 6px;
+}
+
+.dresearch-market-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  color: #26a69a;
+}
+
+.dresearch-market-icon svg {
+  vertical-align: -0.15em;
+}
+
+/* 使用条件徽标内的 Iconify 图标：跟随徽标文字颜色，行内对齐 */
+.ab-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .dresearch-market-desc {
@@ -211,6 +232,26 @@
 }
 
 .ab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+/* 图例徽标（.ab-direct / .ab-vpn / .ab-proxy / .ab-jsonp / .ab-key / .ab-server）
+   沿用 .ab 的基础样式（inline-flex 对齐图标），只补配色 */
+.ab-direct,
+.ab-vpn,
+.ab-proxy,
+.ab-jsonp,
+.ab-key,
+.ab-server {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   border-radius: 999px;
   padding: 1px 7px;
@@ -218,6 +259,8 @@
 }
 
 .ab-none {
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   color: #4a5568;
 }
@@ -275,9 +318,43 @@
 }
 
 .st {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* 图例徽标（.st-checking / .st-ok / .st-fail / .st-na）沿用 .st 的样式 */
+.st-checking,
+.st-ok,
+.st-fail,
+.st-na {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 状态图标（Iconify SVG）：跟随文字颜色，行内对齐 */
+.st-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* 检测中：图标绕中心旋转（无限） */
+.st-icon.spin {
+  animation: st-spin 1s linear infinite;
+}
+
+@keyframes st-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .st.idle {
@@ -293,6 +370,20 @@
   color: #f7768e;
 }
 .st.na {
+  color: #4a5568;
+}
+
+/* 图例徽标配色（.st-checking / .st-ok / .st-fail / .st-na） */
+.st-checking {
+  color: #e0af68;
+}
+.st-ok {
+  color: #9ece6a;
+}
+.st-fail {
+  color: #f7768e;
+}
+.st-na {
   color: #4a5568;
 }
 

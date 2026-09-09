@@ -119,10 +119,12 @@ body {
 }
 
 .sidebar-icon {
-  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
-  text-align: center;
   flex: 0 0 20px;
+  color: currentColor;
 }
 
 .sidebar-foot {

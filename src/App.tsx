@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Dashboard } from './pages/Dashboard';
 import { ResearchReport } from './pages/ResearchReport';
 import { DataResearch } from './pages/DataResearch';
+import { Icon, REPLACE_MAP } from './components/Icon';
 
 type PageId = 'dashboard' | 'report' | 'data';
 
@@ -10,11 +11,12 @@ type PageId = 'dashboard' | 'report' | 'data';
  * 侧边栏快速切换的三个页面。
  * 切页时对应组件会卸载/重挂载：对比看板回到后台就停止 Binance 轮询订阅，
  * 再切回来重新拉取（数据新鲜且不浪费请求）。
+ * 图标统一走 Iconify 在线图标（REPLACE_MAP 里维护 emoji → 图标名映射）。
  */
 const PAGES = [
-  { id: 'dashboard', label: '多图对比', icon: '📊', Comp: Dashboard },
-  { id: 'report', label: '图表调研', icon: '📖', Comp: ResearchReport },
-  { id: 'data', label: '数据调研', icon: '📡', Comp: DataResearch },
+  { id: 'dashboard', label: '多图对比', icon: REPLACE_MAP['多图对比'], Comp: Dashboard },
+  { id: 'report', label: '图表调研', icon: REPLACE_MAP['图表调研'], Comp: ResearchReport },
+  { id: 'data', label: '数据调研', icon: REPLACE_MAP['数据调研'], Comp: DataResearch },
 ] as const;
 
 export default function App() {
@@ -65,7 +67,10 @@ export default function App() {
           }}
           title={sidebarOpen ? '收起侧边栏' : '展开侧边栏'}
         >
-          <span>{sidebarOpen ? '«' : '»'}</span>
+          <Icon
+            icon={sidebarOpen ? REPLACE_MAP['侧栏收起'] : REPLACE_MAP['侧栏展开']}
+            height="1em"
+          />
         </button>
         <nav className="sidebar-nav">
           {PAGES.map(({ id, label, icon }) => (
@@ -77,7 +82,9 @@ export default function App() {
               onMouseEnter={(e) => showTip(label, e.currentTarget)}
               onMouseLeave={hideTip}
             >
-              <span className="sidebar-icon">{icon}</span>
+              <span className="sidebar-icon">
+                <Icon icon={icon} height="1em" />
+              </span>
               <span className="sidebar-label">{label}</span>
             </button>
           ))}

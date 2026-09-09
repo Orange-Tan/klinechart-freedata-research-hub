@@ -146,7 +146,18 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
     const date = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
     return daily ? date : `${date} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
   };
-  // 工具提示：axis 触发时头部默认也显示原始 category 值，同样转成日期
+  // 大数缩写：≥1e9 → B、≥1e6 → M、≥1e3 → K。成交量的轴刻度与 tooltip 都走它，
+  // 避免一长串数字撑满轴线（如 BTC 日线成交量 28700 手 → 29K）。
+  // 整数值直接取整不带小数位（800.00M → 800M），小数位对量能只是展示用，丢失精度可接受。
+  const fmtVolume = (v: number): string => {
+    const abs = Math.abs(v);
+    if (abs >= 1e9) return `${Math.round(v / 1e9)}B`;
+    if (abs >= 1e6) return `${Math.round(v / 1e6)}M`;
+    if (abs >= 1e3) return `${Math.round(v / 1e3)}K`;
+    return String(v);
+  };
+  // 工具提示：axis 触发时头部默认也显示原始 category 值，同样转成日期；
+  // 成交量系列（seriesName === '成交量'）的数字走 fmtVolume 缩写
   const fmtTooltip = (params: unknown): string => {
     const list = (Array.isArray(params) ? params : [params]) as {
       marker?: string;
@@ -157,8 +168,9 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
     const title = list[0]?.axisValue !== undefined ? fmt(Number(list[0].axisValue)) : '';
     const rows = list
       .map((p) => {
-        const v = Array.isArray(p.value) ? String(p.value[0]) : String(p.value);
-        return `${p.marker ?? ''}${p.seriesName ?? ''}: ${v}`;
+        const v = Array.isArray(p.value) ? p.value[1] : p.value;
+        const text = p.seriesName === '成交量' ? fmtVolume(Number(v)) : String(v);
+        return `${p.marker ?? ''}${p.seriesName ?? ''}: ${text}`;
       })
       .join('<br/>');
     return title ? `${title}<br/>${rows}` : rows;
@@ -214,7 +226,11 @@ function buildOption(data: OHLCV[], symbol: string): ECOption {
         scale: true,
         gridIndex: 1,
         splitNumber: 2,
-        axisLabel: { color: '#8b949e' },
+        // 成交量数字缩写：轴刻度从 "28700" 变成 "28.70K"，避免一长串数字撑满轴线
+        axisLabel: {
+          color: '#8b949e',
+          formatter: (v: number) => fmtVolume(v),
+        },
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { show: false },

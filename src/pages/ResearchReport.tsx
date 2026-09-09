@@ -1,7 +1,57 @@
 import './ResearchReport.css';
+import { Icon, REPLACE_MAP, type IconName } from '../components/Icon';
 
 /** 首批 4 库徽标配色 */
 const ACCENTS = ['#26a69a', '#7aa2f7', '#f7768e', '#e0af68'] as const;
+
+/** 维护状态图标（Iconify）：按状态取色 */
+const MAINTAIN_ICON: Record<string, IconName> = {
+  '🟢 活跃': REPLACE_MAP['维护活跃'],
+  '🟢 商业产品': REPLACE_MAP['维护活跃'],
+  '🔴 停更(2024)': REPLACE_MAP['维护停更'],
+};
+
+/**
+ * 维护状态徽标：绿点=活跃/商业产品，红点=停更。
+ * 用 Iconify circle-fill + CSS 上色，替代原 emoji 🟢/🔴。
+ */
+function MaintainLabel({ status }: { status: string }) {
+  const icon = MAINTAIN_ICON[status] ?? REPLACE_MAP['维护活跃'];
+  const red = status.startsWith('🔴');
+  return (
+    <span className={`maintain-label${red ? ' red' : ''}`}>
+      <span className="maintain-dot">
+        <Icon icon={icon} height="0.85em" />
+      </span>
+      {status.slice(2)}
+    </span>
+  );
+}
+
+/**
+ * 功能矩阵单元格：数据里以 emoji 前缀标记优劣（✅ 优 / ❌ 缺 / ⚠️ 中），
+ * 渲染时把前缀转成 Iconify 图标（ph:check-circle / ph:x-circle / ph:warning），
+ * 无前缀的纯文本（如"优"/"良"）则不带图标。
+ */
+const MATRIX_GLYPH: Record<string, IconName> = {
+  '✅': REPLACE_MAP['优点'],
+  '❌': REPLACE_MAP['缺点'],
+  '⚠️': REPLACE_MAP['警告'],
+};
+
+function matrixCell(v: string): { icon: IconName | null; label: string } {
+  for (const [glyph, icon] of Object.entries(MATRIX_GLYPH)) {
+    if (v.startsWith(glyph)) return { icon, label: v.slice(glyph.length).trim() };
+  }
+  return { icon: null, label: v };
+}
+
+/** 矩阵单元格图标按语义上色：✅绿 / ❌红 / ⚠️黄（与全站徽标配色一致） */
+const MATRIX_ICON_CLS: Partial<Record<IconName, string>> = {
+  [REPLACE_MAP['优点']]: 'ok',
+  [REPLACE_MAP['缺点']]: 'fail',
+  [REPLACE_MAP['警告']]: 'warn',
+};
 
 /** 候选库总览表数据（与 docs/图表库调研报告.md 保持一致） */
 const CANDIDATES = [
@@ -230,14 +280,21 @@ export function ResearchReport() {
                     </td>
                     <td>{c.render}</td>
                     <td>{c.size}</td>
-                    <td>{c.maintain}</td>
+                    <td>
+                      <MaintainLabel status={c.maintain} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <div className="notice">
-            <strong>⚠️ 协议提示：</strong>
+            <strong>
+              <span className="notice-icon">
+                <Icon icon={REPLACE_MAP['警告']} height="1em" />
+              </span>
+              协议提示：
+            </strong>
             Apache-2.0 全部可自由商用；uPlot/Plotly（体积大）MIT 自由商用；ApexCharts 的
             “NOASSERTION” 协议实际是付费商用的变体；Highcharts 是 source-available 需购买授权；
             charting-library 完全闭源商用。本项目自用对比不受影响，但商用大型看板必须避开后三者。
@@ -255,7 +312,10 @@ export function ResearchReport() {
                   <em>{c.tag}</em>
                 </h3>
                 <p className="detail-stars">
-                  ★ {c.stars} · {c.org}
+                  <span className="detail-stars-icon">
+                    <Icon icon={REPLACE_MAP['星标']} height="1em" />
+                  </span>
+                  {c.stars} · {c.org}
                 </p>
                 {c.name === 'lightweight-charts' && (
                   <p className="detail-quote">行业事实标准，金融图表的“教科书”级实现。</p>
@@ -271,7 +331,12 @@ export function ResearchReport() {
                 )}
                 <div className="pros-cons">
                   <div className="pros">
-                    <h4>优点</h4>
+                    <h4>
+                      <span className="pros-icon">
+                        <Icon icon={REPLACE_MAP['优点']} height="1em" />
+                      </span>
+                      优点
+                    </h4>
                     <ul>
                       {PROS[i].map((p) => (
                         <li key={p}>{p}</li>
@@ -279,7 +344,12 @@ export function ResearchReport() {
                     </ul>
                   </div>
                   <div className="cons">
-                    <h4>缺点</h4>
+                    <h4>
+                      <span className="cons-icon">
+                        <Icon icon={REPLACE_MAP['缺点']} height="1em" />
+                      </span>
+                      缺点
+                    </h4>
                     <ul>
                       {CONS[i].map((p) => (
                         <li key={p}>{p}</li>
@@ -321,11 +391,20 @@ export function ResearchReport() {
                     <td>{o.stars}</td>
                     <td>
                       <span className="license">{o.license}</span>
-                      {o.warn && <span className="warn-tag">⚠️ 商用注意</span>}
+                      {o.warn && (
+                        <span className="warn-tag">
+                          <span className="warn-tag-icon">
+                            <Icon icon={REPLACE_MAP['警告']} height="1em" />
+                          </span>
+                          商用注意
+                        </span>
+                      )}
                     </td>
                     <td>{o.render}</td>
                     <td>{o.size}</td>
-                    <td>{o.maintain}</td>
+                    <td>
+                      <MaintainLabel status={o.maintain} />
+                    </td>
                     <td>
                       <p className="others-desc">{o.desc}</p>
                       <p className="others-fit">
@@ -358,9 +437,21 @@ export function ResearchReport() {
                 {MATRIX.map((row) => (
                   <tr key={row.label}>
                     <td className="matrix-label">{row.label}</td>
-                    {row.values.map((v, i) => (
-                      <td key={i}>{v}</td>
-                    ))}
+                    {row.values.map((v, i) => {
+                      const cell = matrixCell(v);
+                      return (
+                        <td key={i}>
+                          {cell.icon ? (
+                            <span
+                              className={`matrix-icon${cell.label === '' ? ' icon-only' : ''} ${MATRIX_ICON_CLS[cell.icon]}`}
+                            >
+                              <Icon icon={cell.icon} height="1em" />
+                            </span>
+                          ) : null}
+                          {cell.label}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

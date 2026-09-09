@@ -2,34 +2,39 @@
  * 数据调研页 —— 数据源元数据 + 连通性检测配置。
  * 数据与 docs/免费行情数据源调研报告.md 保持一致，按市场分类、按综合评分排序（高 → 低）。
  */
+import type { IconName } from '../components/Icon';
 
 export type MarketId = 'astock' | 'us' | 'crypto' | 'futures' | 'fund';
 
 export interface MarketInfo {
   id: MarketId;
   label: string;
-  icon: string;
+  /** 市场区块标题图标（Iconify 图标名，见 REPLACE_MAP） */
+  icon: IconName;
   desc: string;
 }
 
 export const MARKETS: MarketInfo[] = [
-  { id: 'astock', label: 'A股', icon: '🇨🇳', desc: '沪深股票 / 指数' },
-  { id: 'us', label: '美股', icon: '🇺🇸', desc: '美股 / 指数 / ETF / ADR' },
-  { id: 'crypto', label: '加密货币', icon: '🪙', desc: '现货 K 线 + 实时推送' },
-  { id: 'futures', label: '期货', icon: '📦', desc: '国内主力连续 / 海外商品' },
-  { id: 'fund', label: '基金', icon: '🏦', desc: '场内 ETF K线 / 场外净值' },
+  { id: 'astock', label: 'A股', icon: 'ph:chart-line', desc: '沪深股票 / 指数' },
+  { id: 'us', label: '美股', icon: 'ph:currency-dollar', desc: '美股 / 指数 / ETF / ADR' },
+  { id: 'crypto', label: '加密货币', icon: 'ph:coins', desc: '现货 K 线 + 实时推送' },
+  { id: 'futures', label: '期货', icon: 'ph:cube', desc: '国内主力连续 / 海外商品' },
+  { id: 'fund', label: '基金', icon: 'ph:bank', desc: '场内 ETF K线 / 场外净值' },
 ];
 
 /** 接入方式（一个源可同时具备多种） */
 export type AccessKind = 'direct' | 'vpn' | 'proxy' | 'jsonp' | 'key' | 'server';
 
-export const ACCESS_META: Record<AccessKind, { label: string; cls: string; title: string }> = {
-  direct: { label: '直连', cls: 'ab-direct', title: '浏览器可直接请求（CORS 开放）' },
-  vpn: { label: '🌐 需外网', cls: 'ab-vpn', title: '大陆网络通常不可达，需外网环境（科学上网）' },
-  proxy: { label: '🔁 需代理', cls: 'ab-proxy', title: '无 CORS 头，需 Vite proxy / 后端 BFF 转发' },
-  jsonp: { label: 'JSONP', cls: 'ab-jsonp', title: '用 <script> 标签注入绕过 CORS' },
-  key: { label: '🔑 需Key', cls: 'ab-key', title: '需注册免费 API key' },
-  server: { label: '服务端', cls: 'ab-server', title: '仅服务端库 / 后端环境可用，浏览器无法直连' },
+export const ACCESS_META: Record<
+  AccessKind,
+  { label: string; icon: IconName | null; cls: string; title: string }
+> = {
+  direct: { label: '直连', icon: null, cls: 'ab-direct', title: '浏览器可直接请求（CORS 开放）' },
+  vpn: { label: '需外网', icon: 'ph:globe', cls: 'ab-vpn', title: '大陆网络通常不可达，需外网环境（科学上网）' },
+  proxy: { label: '需代理', icon: 'ph:arrows-clockwise', cls: 'ab-proxy', title: '无 CORS 头，需 Vite proxy / 后端 BFF 转发' },
+  jsonp: { label: 'JSONP', icon: null, cls: 'ab-jsonp', title: '用 <script> 标签注入绕过 CORS' },
+  key: { label: '需Key', icon: 'ph:key', cls: 'ab-key', title: '需注册免费 API key' },
+  server: { label: '服务端', icon: null, cls: 'ab-server', title: '仅服务端库 / 后端环境可用，浏览器无法直连' },
 };
 
 export interface DataSourceInfo {

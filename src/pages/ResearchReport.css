@@ -116,8 +116,28 @@
   color: #9ece6a;
 }
 
+/* 维护状态徽标（Iconify 圆点 + 文本）：绿=活跃/商业产品，红=停更 */
+.maintain-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: #9ece6a;
+}
+.maintain-label.red {
+  color: #f7768e;
+}
+.maintain-dot {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* 商用注意 / 协议提示 / 星标 / 优缺点 里的 Iconify 图标：跟随文字颜色，行内对齐 */
 .warn-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: 8px;
   font-size: 11px;
   color: #e0af68;
@@ -125,6 +145,11 @@
   border: 1px solid #e0af6840;
   border-radius: 999px;
   padding: 1px 7px;
+}
+.warn-tag-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .notice {
@@ -136,6 +161,17 @@
   color: #e0c08f;
   font-size: 13px;
   line-height: 1.6;
+}
+.notice strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #e0af68;
+}
+.notice-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 /* ===== 其他值得关注的库 ===== */
@@ -197,6 +233,13 @@
   font-size: 12px;
   color: #6b7280;
 }
+.detail-stars-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 3px;
+  color: #e0af68;
+  vertical-align: -0.1em;
+}
 
 .detail-quote {
   margin: 0 0 10px;
@@ -226,6 +269,20 @@
 
 .cons h4 {
   color: #ef5350;
+}
+
+.pros h4,
+.cons h4 {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pros-icon,
+.cons-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .pros-cons ul {
@@ -386,6 +443,27 @@
 .matrix-table td:not(:first-child) {
   text-align: center;
   white-space: nowrap;
+}
+
+/* 矩阵单元格里的优劣图标（Iconify）：inline-flex 保证与文字同一水平线，按语义上色 */
+.matrix-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -0.1em;
+  margin-right: 3px;
+  color: inherit;
+}
+.matrix-icon.icon-only {
+  margin-right: 0;
+}
+.matrix-icon.ok {
+  color: #9ece6a;
+}
+.matrix-icon.fail {
+  color: #f7768e;
+}
+.matrix-icon.warn {
+  color: #e0af68;
 }
 
 .matrix-label {

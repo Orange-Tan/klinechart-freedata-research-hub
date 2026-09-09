@@ -75,6 +75,10 @@ export function KLineChart({ data, symbol, period, live = true, resetKey }: KLin
       // 本身就是 UTC），横轴刻度必须按 UTC 渲染；不给 timezone 会落到浏览器本地
       // 时区，同一根 K 线的时间文字在非东八区用户机器上漂移。
       timezone: 'UTC',
+      // 副图指标（VOL）的固定 pane 高度：默认 100px 太高，量能柱把主图空间挤占。
+      // klinecharts 的 createIndicator 在新建 pane 时取 getLayoutOptions().pane，
+      // 因此这里改 layout.pane.height 即能同时影响所有副图 pane 高度。
+      layout: { pane: { height: 60 } },
       styles: {
         separator: { color: '#1c2333', fill: true },
         grid: {
