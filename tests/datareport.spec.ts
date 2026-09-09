@@ -15,9 +15,9 @@ test('数据调研页渲染 + 一键检测连通性', async ({ page }) => {
 
   await page.goto('/');
 
-  // 1. 侧边栏 3 项
+  // 1. 侧边栏 5 项（看板 + 两详页 + 两调研页），第 3 项是数据调研
   const items = page.locator('.sidebar-item');
-  await expect(items).toHaveCount(3);
+  await expect(items).toHaveCount(5);
   await expect(items.nth(2)).toContainText('数据调研');
 
   // 2. 进入数据调研页

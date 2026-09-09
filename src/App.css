@@ -86,6 +86,9 @@ body {
   flex-direction: column;
   gap: 4px;
   width: 100%;
+  /* 页面增至 5 个后，矮窗口下展开态放不下时允许导航滚动，避免压扁底部
+     数据源说明或溢出被裁剪 */
+  overflow-y: auto;
 }
 
 .sidebar-item {

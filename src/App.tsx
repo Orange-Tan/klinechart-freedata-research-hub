@@ -3,20 +3,25 @@ import { createPortal } from 'react-dom';
 import { Dashboard } from './pages/Dashboard';
 import { ResearchReport } from './pages/ResearchReport';
 import { DataResearch } from './pages/DataResearch';
+import { LightweightShowcase } from './pages/LightweightShowcase';
+import { KlinechartsShowcase } from './pages/KlinechartsShowcase';
 import { Icon, iconOf } from './components/Icon';
 
-type PageId = 'dashboard' | 'report' | 'data';
+type PageId = 'dashboard' | 'report' | 'data' | 'lightweight' | 'klinecharts';
 
 /**
- * 侧边栏快速切换的三个页面。
+ * 侧边栏快速切换的五个页面。
  * 切页时对应组件会卸载/重挂载：对比看板回到后台就停止 Binance 轮询订阅，
  * 再切回来重新拉取（数据新鲜且不浪费请求）。
+ * 两个单库详页（lightweight/klinecharts）同为数据驱动大图页，切页同样重新拉取。
  * 图标统一走本地打包的 Phosphor 图标（REPLACE_MAP 里维护中文标签 → 图标名映射）。
  */
 const PAGES = [
   { id: 'dashboard', label: '多图对比', icon: iconOf('多图对比'), Comp: Dashboard },
   { id: 'report', label: '图表调研', icon: iconOf('图表调研'), Comp: ResearchReport },
   { id: 'data', label: '数据调研', icon: iconOf('数据调研'), Comp: DataResearch },
+  { id: 'lightweight', label: '轻量库详情', icon: iconOf('轻量库详情'), Comp: LightweightShowcase },
+  { id: 'klinecharts', label: 'K线库详情', icon: iconOf('K线库详情'), Comp: KlinechartsShowcase },
 ] as const;
 
 /** 展开/折叠切换图标：按当前状态取对应图标 */
@@ -96,8 +101,12 @@ export default function App() {
           <Dashboard />
         ) : page === 'report' ? (
           <ResearchReport />
-        ) : (
+        ) : page === 'data' ? (
           <DataResearch />
+        ) : page === 'lightweight' ? (
+          <LightweightShowcase />
+        ) : (
+          <KlinechartsShowcase />
         )}
       </div>
       {/* 悬浮提示：portal 到 body，fixed 定位 + 99999，盖过右侧图表 canvas */}

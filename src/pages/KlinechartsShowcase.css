@@ -1,0 +1,343 @@
+/* ============================================================
+   klinecharts v10 详解页（kc- 前缀，独立设计，不与 lw- 混用）
+   主题：暗色金融交易工作台。页面主背景、面板、边框、文字、涨跌色
+   全部取自项目全局 token（见 src/App.css）：
+   bg #0b0e17 / panel #111625 / border #1c2333
+   text #d7dbe4 / #8b949e / #e8ecf3
+   teal #26a69a / blue #7aa2f7 / red #ef5350 / amber #e0af68 / green #9ece6a
+   语义色：ok #9ece6a / fail #f7768e / warn #e0af68
+   ============================================================ */
+
+.kc-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+
+/* ===== 页首 ===== */
+.kc-hero {
+  margin-bottom: 20px;
+}
+
+.kc-hero h1 {
+  margin: 0 0 10px;
+  font-size: 30px;
+  font-weight: 700;
+  color: #e8ecf3;
+  letter-spacing: 0.2px;
+}
+
+.kc-subtitle {
+  margin: 0;
+  max-width: 76ch; /* 正文行长控制，~80 字符 */
+  line-height: 1.7;
+  color: #8b949e;
+  font-size: 14px;
+}
+
+/* ===== 控制栏：交易软件工具条式分组 ===== */
+.kc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 18px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: #111625;
+  border: 1px solid #1c2333;
+  border-radius: 10px;
+}
+
+.kc-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.kc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kc-field-name {
+  font-size: 11px;
+  color: #8b949e;
+  letter-spacing: 0.4px;
+}
+
+.kc-field select {
+  background: #0b0e17;
+  color: #d7dbe4;
+  border: 1px solid #2b3245;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  outline: none;
+  min-width: 120px;
+}
+
+.kc-field select:focus {
+  border-color: #26a69a;
+}
+
+.kc-buttons {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.kc-btn {
+  background: #1a2233;
+  color: #d7dbe4;
+  border: 1px solid #2b3245;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.kc-btn:hover {
+  background: #232d44;
+  border-color: #4a5568;
+  color: #e8ecf3;
+}
+
+.kc-btn:focus-visible {
+  outline: 2px solid #26a69a;
+  outline-offset: 2px;
+}
+
+/* 已注册态：青色描边，弱化"还能再点"的错觉 */
+.kc-btn-done {
+  border-color: #26a69a;
+  color: #26a69a;
+  background: rgba(38, 166, 154, 0.08);
+}
+
+.kc-btn-done:hover {
+  background: rgba(38, 166, 154, 0.14);
+  border-color: #26a69a;
+}
+
+/* ===== 大图舞台 ===== */
+.kc-stage {
+  position: relative;
+  height: 640px;
+  background: #111625;
+  border: 1px solid #1c2333;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.kc-stage .chart-container {
+  width: 100%;
+  height: 100%;
+}
+
+.kc-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b949e;
+  font-size: 14px;
+  background: rgba(11, 14, 23, 0.72);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ===== 状态条（十字光标 OHLC + 可见区间 + 最近操作） ===== */
+.kc-statusbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 8px 16px;
+  margin-top: 10px;
+  background: #0f1420;
+  border: 1px solid #1c2333;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.kc-status-cell {
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+}
+
+.kc-ohlc {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.kc-ohlc-time {
+  color: #8b949e;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kc-ohlc-item {
+  color: #8b949e;
+  white-space: nowrap;
+}
+
+.kc-ohlc-item b {
+  font-weight: 600;
+  color: #d7dbe4;
+  font-variant-numeric: tabular-nums;
+}
+
+.kc-ohlc-change b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 涨跌语义色 */
+.kc-up {
+  color: #26a69a;
+}
+
+.kc-down {
+  color: #ef5350;
+}
+
+.kc-status-range {
+  font-variant-numeric: tabular-nums;
+}
+
+.kc-status-msg {
+  margin-left: auto;
+}
+
+.kc-status-empty {
+  color: #4a5568;
+}
+
+/* 状态消息语义色 */
+.kc-msg-info {
+  color: #8b949e;
+}
+
+.kc-msg-ok {
+  color: #9ece6a;
+}
+
+.kc-msg-warn {
+  color: #e0af68;
+}
+
+/* ===== 文档区 ===== */
+.kc-docs {
+  margin-top: 44px;
+}
+
+.kc-docs > h2 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #e8ecf3;
+}
+
+.kc-docs .report-section {
+  margin-top: 30px;
+}
+
+.kc-docs .report-section h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #e8ecf3;
+  /* 青色左边线，与报告页 h2 的分节风格同构 */
+  border-left: 3px solid #26a69a;
+  padding-left: 10px;
+}
+
+.kc-docs p {
+  margin: 10px 0;
+  max-width: 80ch; /* 行长控制在 ~80 字符 */
+  line-height: 1.85;
+  color: #d7dbe4;
+  font-size: 14px;
+}
+
+.kc-docs code {
+  background: #1a2233;
+  border: 1px solid #2b3245;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12.5px;
+  color: #7aa2f7;
+}
+
+/* 表格（与报告页 .report-table 同骨架，行内微调） */
+.kc-docs .report-table-wrap {
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.kc-docs .report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 640px;
+}
+
+.kc-docs .report-table th {
+  text-align: left;
+  padding: 11px 14px;
+  background: #161c2c;
+  color: #8b949e;
+  font-weight: 600;
+  border-bottom: 1px solid #1c2333;
+  white-space: nowrap;
+}
+
+.kc-docs .report-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #141a28;
+  color: #b7bfcb;
+  line-height: 1.6;
+  vertical-align: top;
+}
+
+.kc-docs .report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.kc-docs .report-table tbody tr:hover {
+  background: #161d2e;
+}
+
+/* 小屏：控制栏纵向堆叠，大图高度略降 */
+@media (max-width: 760px) {
+  .kc-page {
+    padding: 20px 14px 48px;
+  }
+
+  .kc-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kc-group {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .kc-field {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .kc-stage {
+    height: 520px;
+  }
+}

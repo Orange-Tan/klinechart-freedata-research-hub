@@ -24,6 +24,8 @@ export const REPLACE_MAP = {
   '多图对比': 'chart-bar', // 柱状图（对比看板）
   '图表调研': 'book-open', // 打开的书（调研报告）
   '数据调研': 'target', // 准星（连通性扫描/探测目标）
+  '轻量库详情': 'chart-line-up', // 上升折线（Lightweight-Charts 大图详页）
+  'K线库详情': 'squares-four', // 四宫格（klinecharts 多面板详页）
   // —— 折叠按钮（App.tsx）——
   '侧栏展开': 'caret-right',
   '侧栏收起': 'caret-left',
