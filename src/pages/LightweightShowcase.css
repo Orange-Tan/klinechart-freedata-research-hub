@@ -6,10 +6,43 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* 滚动容器铺满整个右侧内容区：图表两侧的空白区也属于滚动容器，
+     鼠标停在空白上滚轮也能翻页（否则 max-width 自居中会在 .main 内留下
+     不可滚动的两侧空白）。内容列由内层 .lw-inner 居中限宽。 */
+  width: 100%;
+  /* macOS overlay 滚动条默认只在滚动时闪现，这里显式声明常驻窄滚动条 */
+  scrollbar-width: thin;
+  scrollbar-color: #2b3245 #0b0e17;
+}
+
+/* 常驻滚动条（WebKit：定义了 ::-webkit-scrollbar 后 mac 上就不再是 overlay 闪现） */
+.lw-page::-webkit-scrollbar {
+  width: 10px;
+}
+
+.lw-page::-webkit-scrollbar-track {
+  background: #0b0e17;
+}
+
+.lw-page::-webkit-scrollbar-thumb {
+  background: #2b3245;
+  border-radius: 5px;
+  border: 2px solid #0b0e17;
+}
+
+.lw-page::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}
+
+/* 内容列：居中限宽 + 纵向 flex，与数据调研页表格同宽 */
+.lw-inner {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 18px 32px 40px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 18px 20px 40px;
   min-width: 0;
 }
 

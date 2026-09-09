@@ -177,10 +177,13 @@ export const LightweightShowcaseChart = forwardRef<
         vertLines: { color: '#1c2333' },
         horzLines: { color: '#1c2333' },
       },
-      // 启用鼠标滚轮缩放与拖拽平移（handleScroll/handleScale 的可交互能力演示，
-      // 也是 TimeScale API 平移缩放的前提，配合下方 scrollToRealTime 回到最新）
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+      // 交互能力演示：保留拖拽平移与捏合缩放，但关闭鼠标滚轮缩放。
+      // 库只在 handleScroll.mouseWheel || handleScale.mouseWheel 为 true 时才挂
+      // wheel listener 并 preventDefault——滚轮事件被图表吞掉会导致页面无法滚动。
+      // 两个开关都设 false 后 wheel 事件回到浏览器默认行为，鼠标悬停图表上
+      // 也能直接滚动页面（时间轴平移缩放仍可经拖拽、触摸与捏合完成）。
+      handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      handleScale: { axisPressedMouseMove: true, mouseWheel: false, pinch: true },
       kineticScroll: { touch: true, mouse: false },
       crosshair: {
         mode: CrosshairMode.Normal,

@@ -55,6 +55,7 @@ export function LightweightShowcase() {
 
   return (
     <div className="lw-page">
+      <div className="lw-inner">
       <header className="lw-hero">
         <div className="lw-hero-head">
           <h1>Lightweight-Charts 详解</h1>
@@ -125,6 +126,7 @@ export function LightweightShowcase() {
       )}
 
       <LightweightDocs />
+      </div>
     </div>
   );
 }

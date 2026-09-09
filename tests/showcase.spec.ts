@@ -59,8 +59,8 @@ test('两个单库详页渲染：大图 + 全量文档 + 功能开关', async ({
     .toBe(true);
   await expect(page.locator('.kc-stage .chart-container canvas').first()).toBeVisible();
   await expect(page.locator('.kc-docs h2', { hasText: 'klinecharts 库详解' })).toBeVisible();
-  // 文档分节齐全
-  for (const title of ['库是什么', '核心 API', '副图与指标', '画线工具', '交互与状态条', '与 lightweight-charts 的对比']) {
+  // 文档分节齐全（第一节为功能总览，全部功能表格集中于此；后续章节按主题展开）
+  for (const title of ['功能总览', '库是什么', '核心架构', '数据接入', '图表类型与样式', '副图与指标', '画线工具', '坐标轴与多 Y 轴', '事件与动作', '多语言 / 导出 / 工具', '性能与许可', '项目实践要点（踩坑速查）', '与 lightweight-charts 的对比']) {
     await expect(page.locator('.kc-docs .report-section h3', { hasText: title })).toBeVisible();
   }
 

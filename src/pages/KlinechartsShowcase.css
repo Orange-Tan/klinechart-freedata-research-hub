@@ -12,7 +12,38 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  max-width: 1080px;
+  /* 滚动容器占满整个右侧内容区（不再用 max-width+margin:auto 自居中——那样会让
+     图表两侧留下属于 .main 的不可滚动空白区，鼠标挪到空白上滚轮页面不动）。
+     内容列改由内层 .kc-inner 居中限宽，与数据调研页（.report > .report-body）
+     同构：空白区也属于滚动容器，滚轮经过任意位置都能翻页 */
+  width: 100%;
+  /* macOS overlay 滚动条默认只在滚动时闪现，这里显式声明常驻窄滚动条 */
+  scrollbar-width: thin;
+  scrollbar-color: #2b3245 #0b0e17;
+}
+
+/* 常驻滚动条（WebKit：定义了 ::-webkit-scrollbar 后 mac 上就不再是 overlay 闪现） */
+.kc-page::-webkit-scrollbar {
+  width: 10px;
+}
+
+.kc-page::-webkit-scrollbar-track {
+  background: #0b0e17;
+}
+
+.kc-page::-webkit-scrollbar-thumb {
+  background: #2b3245;
+  border-radius: 5px;
+  border: 2px solid #0b0e17;
+}
+
+.kc-page::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}
+
+/* 内容列：居中限宽，与数据调研页表格同宽（.report-body max-width: 1240px） */
+.kc-inner {
+  max-width: 1240px;
   margin: 0 auto;
   padding: 28px 24px 64px;
 }
@@ -128,7 +159,11 @@
 /* ===== 大图舞台 ===== */
 .kc-stage {
   position: relative;
-  height: 420px;
+  /* 大图比例 16:9：宽度 = 内容列宽（不变），高度 = 宽度 × 9/16（从固定
+     420px 增高到约 670px）。flex 子项 + overflow:hidden 会触发 flex 自动
+     最小尺寸压缩，用 flex: 0 0 auto 阻止压缩（与 .lw-stage 同构）。 */
+  flex: 0 0 auto;
+  aspect-ratio: 16 / 9;
   background: #111625;
   border: 1px solid #1c2333;
   border-radius: 10px;
@@ -292,6 +327,34 @@
   min-width: 640px;
 }
 
+/* 与数据调研页同宽：内容区 1240px - 两侧 padding 48px = 内容可用 ~1192px，
+   指标 27 行信息量大，放宽到 960px，窄屏走横向滚动兜底 */
+.kc-docs .kc-feature-table {
+  min-width: 640px;
+}
+
+/* 第一节小标题（h4）：行内小徽章式，与表格分组呼应 */
+.kc-docs h4.kc-subhead {
+  margin: 20px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #26a69a;
+  letter-spacing: 0.3px;
+}
+
+/* 基本信息表：键列固定窄，值列自由伸展 */
+.kc-docs .kc-feature-table .kc-fkey {
+  white-space: nowrap;
+  width: 1%;
+  padding: 10px 14px;
+  text-align: left;
+  background: #161c2c;
+  color: #8b949e;
+  font-weight: 600;
+  border-bottom: 1px solid #1c2333;
+  font-size: 13px;
+}
+
 .kc-docs .report-table th {
   text-align: left;
   padding: 11px 14px;
@@ -320,7 +383,7 @@
 
 /* 小屏：控制栏纵向堆叠，大图高度略降 */
 @media (max-width: 760px) {
-  .kc-page {
+  .kc-inner {
     padding: 20px 14px 48px;
   }
 
@@ -341,6 +404,6 @@
   }
 
   .kc-stage {
-    height: 360px;
+    /* 小屏窄窗口下按 16:9 比例仍由 aspect-ratio 换算，宽度收窄高度随之降低 */
   }
 }
