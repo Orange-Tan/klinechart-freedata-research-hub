@@ -230,26 +230,26 @@ export const LightweightShowcaseChart = forwardRef<
     );
 
     // 成交量：独立 pane（paneIndex=1 即第一个附加 pane，等于 panes()[1]）。
-    // 注意：priceScaleId 命名 scale 后，必须等序列创建完毕、scale 归入对应 pane
-    // 之后才能取到它；而 chart.priceScale(id) 只查主图 pane（paneIndex 默认 0），
-    // 取副图 scale 要经 chart.panes()[paneIndex].priceScale(id)（缺省时抛错）。
-    // 因此这里改为在各自 pane 创建后、用 pane.priceScale(id) 设置 scaleMargins。
+    // 不写 priceScaleId → 序列挂到该 pane 的默认 right 刻度（官方 panes 教程
+    // 的 volume 写法）。若改成命名 overlay 刻度（如 'vol'），该刻度永远没有轴
+    // widget（库源码只给 left/right 建轴），pane 右轴就绑不到数据源 → 轴上一个
+    // 刻度数字都没有、只剩最后价标签——本页此前量能数值消失就是这个原因。
     const volume = chart.addSeries(
       HistogramSeries,
       {
         priceFormat: { type: 'volume' },
-        priceScaleId: 'vol',
       },
       1,
     );
 
-    // 附加演示 pane：涨跌幅直方图（stretch factor 演示）
+    // 附加演示 pane：涨跌幅直方图（stretch factor 演示）。
+    // 同样用该 pane 的默认 right 刻度（不写 priceScaleId），否则该 pane 的
+    // 右轴会像成交量 pane 一样空有边框没有刻度数字。
     const extra = chart.addSeries(
       HistogramSeries,
       {
         color: '#e0af68',
         priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-        priceScaleId: 'extra',
       },
       2,
     );
@@ -291,9 +291,13 @@ export const LightweightShowcaseChart = forwardRef<
     const ma5 = chart.addSeries(LineSeries, { color: '#f7768e', lineWidth: 1, priceScaleId: 'main' }, 0);
     const ma10 = chart.addSeries(LineSeries, { color: '#7aa2f7', lineWidth: 1, priceScaleId: 'main' }, 0);
     const ma20 = chart.addSeries(LineSeries, { color: '#e0af68', lineWidth: 1, priceScaleId: 'main' }, 0);
-    const volMa5 = chart.addSeries(LineSeries, { color: '#f7768e', lineWidth: 1, priceScaleId: 'vol' }, 1);
-    const volMa10 = chart.addSeries(LineSeries, { color: '#7aa2f7', lineWidth: 1, priceScaleId: 'vol' }, 1);
-    const volMa20 = chart.addSeries(LineSeries, { color: '#e0af68', lineWidth: 1, priceScaleId: 'vol' }, 1);
+    // 均量线 5/10/20：挂到 pane 1 的默认 right 刻度（与 volume 同刻度共享）。
+    // 库源码 _internal_updateFormatter 按 zOrder 取最小者做 formatter 源——
+    // volume 先注册 zOrder 更小，刻度数字格式跟 volume（K/M 量能缩写），
+    // 均量线不带 volume priceFormat 也不会破坏刻度格式。
+    const volMa5 = chart.addSeries(LineSeries, { color: '#f7768e', lineWidth: 1 }, 1);
+    const volMa10 = chart.addSeries(LineSeries, { color: '#7aa2f7', lineWidth: 1 }, 1);
+    const volMa20 = chart.addSeries(LineSeries, { color: '#e0af68', lineWidth: 1 }, 1);
 
     // 序列标记插件（买卖点）：autoScale（注意不是 autoscale）让价格刻度把标记也算进去
     const markersPlugin = createSeriesMarkers<Time>(candle, [], { autoScale: true });
@@ -434,7 +438,7 @@ export const LightweightShowcaseChart = forwardRef<
     if (!chart || !mainPane || !volumePane) return;
     mainPane.setStretchFactor(7);
     volumePane.setStretchFactor(3);
-    chart.panes()[1].priceScale('vol').applyOptions({ scaleMargins: { top: 0.5, bottom: 0 } });
+    chart.panes()[1].priceScale('right').applyOptions({ scaleMargins: { top: 0.5, bottom: 0 } });
   }, []);
 
   // 功能开关同步：feature 关闭时卸载对应序列/插件，开启时重新填充
@@ -509,7 +513,7 @@ export const LightweightShowcaseChart = forwardRef<
     if (f.extraPanes) {
       extraRef.current?.setData(dataRef.current.map(toExtra));
       extraPane?.setStretchFactor(1);
-      chart?.panes()[2].priceScale('extra').applyOptions({ scaleMargins: { top: 0.6, bottom: 0.1 } });
+      chart?.panes()[2].priceScale('right').applyOptions({ scaleMargins: { top: 0.6, bottom: 0.1 } });
     } else {
       extraRef.current?.setData([]);
       extraPane?.setStretchFactor(0);

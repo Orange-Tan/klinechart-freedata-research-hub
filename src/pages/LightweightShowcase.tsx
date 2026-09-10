@@ -211,6 +211,263 @@ export function LightweightShowcase() {
   );
 }
 
+/* ==================== 功能总览表格数据（对应 docs/Lightweight-Charts 详细功能点整理.md） ==================== */
+
+/** 基本信息 */
+const LW_BASIC_TABLE: [string, string][] = [
+  ['全名', 'TradingView Lightweight Charts（轻量级图表库）'],
+  ['当前版本', '5.2.1（本项目安装）'],
+  ['作者', 'TradingView'],
+  ['协议', 'Apache-2.0（商用 / 修改 / 再分发需保留 NOTICE 归属声明）'],
+  ['技术栈', 'HTML5 Canvas 渲染，零框架依赖；仅一个运行时依赖 fancy-canvas@2.1.0'],
+  ['仓库', 'https://github.com/tradingview/lightweight-charts'],
+  ['官网', 'https://www.tradingview.com/lightweight-charts/'],
+  ['打包产物', 'development.mjs / production.mjs（ESM）+ standalone 单文件版（UMD）'],
+];
+
+/** 核心架构：三种水平轴 */
+const LW_HORZ_SCALE_TABLE: { type: string; entry: string; desc: string }[] = [
+  { type: '时间轴（默认）', entry: 'createChart()', desc: '横轴为时间（Time）：UTC 时间戳 / BusinessDay / 日期字符串' },
+  { type: '期权 / 价格轴', entry: 'createOptionsChart()', desc: '横轴为价格数值（number），期权隐含波动率曲线等' },
+  { type: '收益率曲线轴', entry: 'createYieldCurveChart()', desc: '横轴为到期期限数值，收益率曲线专用' },
+];
+
+/** 核心架构：Time 三种写法 */
+const LW_TIME_TABLE: { form: string; example: string; desc: string }[] = [
+  { form: 'UTCTimestamp', example: '1651564800', desc: '秒级时间戳（注意不是毫秒！本项目接入须 time / 1000）' },
+  { form: 'BusinessDay', example: '{ year: 2022, month: 5, day: 3 }', desc: '对象式日期' },
+  { form: 'string', example: "'2022-05-03'", desc: '日期字符串' },
+];
+
+/** 核心架构：三层 API */
+const LW_CORE_API_TABLE: { entry: string; iface: string; role: string }[] = [
+  { entry: 'createChart()', iface: 'IChartApi（图表）', role: '最外层容器：addSeries / timeScale / priceScale / panes / attachPrimitive' },
+  { entry: 'chart.addSeries()', iface: 'ISeriesApi（系列）', role: 'K 线 / 折线 / 面积 / 直方图 / 基准线 / 自定义' },
+  { entry: 'chart.timeScale()', iface: 'ITimeScaleApi（时间轴）', role: '平移缩放、可见区间、坐标换算、事件' },
+  { entry: 'chart.priceScale(id)', iface: 'IPriceScaleApi（价格轴）', role: '可见范围、自动缩放、样式' },
+  { entry: 'chart.panes()', iface: 'IPaneApi[]（多窗格）', role: '垂直堆叠的横向区域，独立拉伸 / 移动 / 挂插件' },
+  { entry: 'chart.attachPrimitive', iface: 'IPanePrimitive（窗格级插件）', role: '在整个窗格（含轴区）自绘' },
+];
+
+/** 数据接入：数据模型 */
+const LW_DATA_MODEL_TABLE: { iface: string; fields: string; series: string }[] = [
+  { iface: 'OhlcData', fields: 'time, open, high, low, close', series: 'Candlestick、Bar' },
+  { iface: 'SingleValueData', fields: 'time, value', series: 'Line、Area、Baseline、Histogram' },
+  { iface: 'WhitespaceData', fields: '仅 time（空白点，保持时间轴连续）', series: '所有系列' },
+  { iface: 'HistogramData', fields: 'time, value, color?', series: 'Histogram' },
+  { iface: 'BarData / LineData', fields: 'time, OHLC 或 value, color?', series: '单点自定义颜色' },
+  { iface: 'CustomData', fields: 'time, color?, customValues?', series: 'Custom 自定义系列' },
+];
+
+/** 数据接入：数据写入 API */
+const LW_DATA_WRITE_TABLE: { api: string; role: string }[] = [
+  { api: 'setData(data[])', role: '全量替换（必须按时间升序），适合首次加载或整体换数据' },
+  { api: 'update(bar, historicalUpdate?)', role: '增量更新：时间等于最后一根则替换、大于则追加；historicalUpdate 可更新非末尾历史点（较慢）' },
+  { api: 'pop(count)', role: '从末尾删除 N 根，返回被删数据' },
+  { api: 'data()', role: '返回当前全部数据' },
+  { api: 'dataByIndex(index, mismatchDirection?)', role: '按逻辑索引取数据，可指定就近搜索方向（MismatchDirection）' },
+  { api: "subscribeDataChanged(handler)", role: "监听数据变更（setData / update 触发），handler 收到 'full' | 'update'" },
+];
+
+/** 图表类型：7 种系列 */
+const LW_SERIES_TABLE: { series: string; entry: string; style: string; point: string }[] = [
+  { series: 'K 线', entry: 'CandlestickSeries', style: 'CandlestickStyleOptions', point: '涨 / 跌颜色、影线、边框独立配置' },
+  { series: '柱线', entry: 'BarSeries', style: 'BarStyleOptions', point: 'OHLC 柱状图' },
+  { series: '折线', entry: 'LineSeries', style: 'LineStyleOptions', point: 'LineType：直线 / 阶梯 / 曲线' },
+  { series: '面积', entry: 'AreaSeries', style: 'AreaStyleOptions', point: '上下渐变填充、可反向填充、可相对基准值' },
+  { series: '直方图', entry: 'HistogramSeries', style: 'HistogramStyleOptions', point: 'base 基准线、每根可独立上色（成交量标准做法）' },
+  { series: '基准线', entry: 'BaselineSeries', style: 'BaselineStyleOptions', point: '以 baseValue 分界上下双色填充（涨跌对比图）' },
+  { series: '自定义', entry: 'addCustomSeries()', style: 'CustomStyleOptions', point: '自绘渲染器实现库不支持的图表类型' },
+];
+
+/** 图表类型：价格格式 */
+const LW_PRICE_FORMAT_TABLE: { type: string; desc: string }[] = [
+  { type: 'price', desc: '常规价格：precision 小数位 + minMove 最小跳动（默认 0.01）；小价格可用 base = 1/minMove 规避浮点精度' },
+  { type: 'volume', desc: '缩写格式：1.2K / 12.67M（本项目成交量轴所用）' },
+  { type: 'percent', desc: '末尾加 %' },
+  { type: 'custom', desc: '完全自定义 formatter 函数' },
+];
+
+/** 图表配置：尺寸与缩放 */
+const LW_SIZE_TABLE: { opt: string; desc: string }[] = [
+  { opt: 'width / height', desc: '像素尺寸；默认 0 = 跟随容器' },
+  { opt: 'autoSize', desc: 'ResizeObserver 自动跟随容器尺寸（需浏览器支持，否则回退固定尺寸）' },
+  { opt: 'defaultVisiblePriceScaleId', desc: '默认使用左 / 右价格轴（默认 right）' },
+];
+
+/** 图表配置：时间轴 */
+const LW_TIMESCALE_TABLE: { opt: string; desc: string }[] = [
+  { opt: 'rightOffset / rightOffsetPixels', desc: '右侧留白（根 / 像素）' },
+  { opt: 'barSpacing / minBarSpacing / maxBarSpacing', desc: '柱间距' },
+  { opt: 'fixLeftEdge / fixRightEdge', desc: '锁定左右边界，禁止滚出数据范围' },
+  { opt: 'lockVisibleTimeRangeOnResize', desc: '尺寸变化时保持可见时间范围' },
+  { opt: 'rightBarStaysOnScroll', desc: '滚动时悬停柱不移动' },
+  { opt: 'timeVisible / secondsVisible', desc: '显示时间 / 秒' },
+  { opt: 'shiftVisibleRangeOnNewBar', desc: '新数据追加时自动右移（实时图关键开关）' },
+  { opt: 'tickMarkFormatter', desc: '自定义时间刻度标签' },
+  { opt: 'uniformDistribution', desc: '同权重刻度要么全画要么不画' },
+  { opt: 'minimumHeight', desc: '时间轴最小高度' },
+  { opt: 'allowBoldLabels', desc: '主刻度粗体' },
+  { opt: 'enableConflation', desc: '数据融合：柱间距 < 0.5px 时自动合并数据点，大幅提升大数据量缩小时的渲染性能' },
+  { opt: 'conflationThresholdFactor', desc: '融合平滑系数（1.0~8.0+，sparkline 小图用高值更平滑）' },
+  { opt: 'precomputeConflationOnInit', desc: '加载后后台预计算融合块（>10K 点大数据集缩放大提速 10-100x，代价是初始加载 +100-500ms、内存 +20-50%）' },
+];
+
+/** 图表配置：价格轴 */
+const LW_PRICESCALE_TABLE: { opt: string; desc: string }[] = [
+  { opt: 'mode', desc: 'Normal 线性 / Logarithmic 对数 / Percentage 百分比（首个可见值为 0%）/ IndexedTo100（首值置 100）' },
+  { opt: 'autoScale', desc: '自动适配可见数据范围（overlay 轴恒为 true）' },
+  { opt: 'invertScale', desc: '上下反转' },
+  { opt: 'scaleMargins', desc: '上下留白比例（默认 { bottom: 0.1, top: 0.2 }）' },
+  { opt: 'visible / borderVisible / borderColor / textColor', desc: '可见性与样式' },
+  { opt: 'alignLabels', desc: '标签对齐防重叠' },
+  { opt: 'minimumWidth', desc: '最小宽度（多图对齐用）' },
+  { opt: 'tickMarkDensity', desc: '刻度密度（默认 2.5）' },
+  { opt: 'ensureEdgeTickMarksVisible', desc: '上下边缘强制显示刻度' },
+];
+
+/** API 清单：IChartApi */
+const LW_CHART_API_TABLE: { api: string; role: string }[] = [
+  { api: 'remove()', role: '销毁图表及全部 DOM（不可逆）' },
+  { api: 'resize(w, h, forceRepaint?)', role: '手动改尺寸；forceRepaint 立即重绘（截图前用）' },
+  { api: 'addSeries(def, options?, paneIndex?)', role: '添加系列到指定窗格' },
+  { api: 'addCustomSeries(paneView, options?, paneIndex?)', role: '添加自定义绘制系列' },
+  { api: 'removeSeries(series)', role: '移除系列（不可逆）' },
+  { api: 'subscribeClick / subscribeDblClick / subscribeCrosshairMove', role: '点击 / 双击 / 十字线移动事件（MouseEventParams）' },
+  { api: 'priceScale(id, paneIndex?)', role: '获取价格轴 API' },
+  { api: 'timeScale()', role: '获取时间轴 API' },
+  { api: 'applyOptions / options()', role: '运行期改 / 查配置' },
+  { api: 'takeScreenshot()', role: '返回图表 Canvas，可 toDataURL / toBlob 导出 PNG' },
+  { api: 'addPane() / panes() / removePane(i) / swapPanes(a, b)', role: '多窗格管理' },
+  { api: 'setCrosshairPosition / clearCrosshairPosition', role: '编程设置 / 清除十字线（多图联动用）' },
+  { api: 'chartElement() / paneSize(i?)', role: '内部容器 div / 绘图区像素尺寸' },
+  { api: 'autoSizeActive()', role: '是否处于 ResizeObserver 自动尺寸模式' },
+];
+
+/** API 清单：ITimeScaleApi */
+const LW_TIMESCALE_API_TABLE: { api: string; role: string }[] = [
+  { api: 'scrollPosition / scrollToPosition / scrollToRealTime', role: '编程滚动' },
+  { api: 'getVisibleRange / setVisibleRange', role: '时间范围（不能外推已有数据）' },
+  { api: 'getVisibleLogicalRange / setVisibleLogicalRange', role: '逻辑索引范围' },
+  { api: 'resetTimeScale / fitContent', role: '重置 / 缩放到显示全部数据' },
+  { api: 'logicalToCoordinate / coordinateToLogical / timeToIndex / timeToCoordinate / coordinateToTime / width / height', role: '坐标换算' },
+  { api: 'subscribeVisibleTimeRangeChange / subscribeVisibleLogicalRangeChange / subscribeSizeChange', role: '事件（滚动加载历史的入口）' },
+];
+
+/** API 清单：IPriceScaleApi */
+const LW_PRICESCALE_API_TABLE: { api: string; role: string }[] = [
+  { api: 'applyOptions / options / width', role: '改 / 查配置与宽度' },
+  { api: 'setVisibleRange / getVisibleRange', role: '设置 / 读取可见价格范围' },
+  { api: 'setAutoScale(on)', role: '编程开关自动缩放' },
+];
+
+/** API 清单：ISeriesApi（数据方法见「数据接入」） */
+const LW_SERIES_API_TABLE: { api: string; role: string }[] = [
+  { api: 'priceFormatter()', role: '复用图表价格格式化逻辑' },
+  { api: 'priceToCoordinate(price) / coordinateToPrice(coord)', role: '价格与像素互转' },
+  { api: 'barsInLogicalRange(range)', role: '返回某逻辑范围内 bar 数量与前后余量（滚动加载历史的标准用法）' },
+  { api: 'createPriceLine / removePriceLine / priceLines', role: '参考价格线（自定义水平线，含轴标签 / 标题 / 颜色）' },
+  { api: 'lastValueData(globalLast)', role: '最后价格及颜色（globalLast=false 取当前可见范围内最后一个）' },
+  { api: 'attachPrimitive / detachPrimitive', role: '挂载 / 卸载系列级插件' },
+  { api: 'seriesType()', role: '当前系列类型' },
+  { api: 'moveToPane(i) / getPane()', role: '跨窗格移动 / 所在窗格 API' },
+  { api: 'seriesOrder() / setSeriesOrder(n)', role: '绘制层级' },
+];
+
+/** API 清单：IPaneApi */
+const LW_PANE_API_TABLE: { api: string; role: string }[] = [
+  { api: 'getHeight / setHeight', role: '固定高度' },
+  { api: 'getStretchFactor / setStretchFactor', role: '窗格相对高度占比（多窗格布局，本项目 7:3 用的它）' },
+  { api: 'moveTo() / paneIndex() / getSeries()', role: '换位 / 索引 / 反查序列' },
+  { api: 'priceScale(id)', role: '取本窗格内的价格轴（主图 priceScale 查不到副图）' },
+  { api: 'attachPrimitive / detachPrimitive', role: '窗格级插件' },
+  { api: 'getHTMLElement()', role: '窗格 DOM 元素' },
+  { api: 'setPreserveEmptyPane()', role: '窗格无数据时是否保留' },
+  { api: 'addSeries / addCustomSeries', role: '窗格内直接创建系列' },
+];
+
+/** 插件体系：内置官方插件 */
+const LW_PLUGIN_TABLE: { fn: string; role: string }[] = [
+  { fn: 'createSeriesMarkers(series, markers, options?)', role: '系列标记插件：K 线上画买卖点标记' },
+  { fn: 'createUpDownMarkers(series, options?)', role: '涨跌标记插件：价格变动后自动显示涨 / 跌箭头，可设时长自动消失' },
+  { fn: 'createTextWatermark(pane, options)', role: '文字水印（Logo、版权、仅供演示等）' },
+  { fn: 'createImageWatermark(pane, imageUrl, options)', role: '图片水印' },
+  { fn: 'createYieldCurveChart / createOptionsChart', role: '前述专用图表类型' },
+];
+
+/** 插件体系：系列标记属性 */
+const LW_MARKER_TABLE: { field: string; desc: string }[] = [
+  { field: 'time / position', desc: '位置：aboveBar / belowBar / inBar，或价格轴定位 atPriceTop / atPriceMiddle / atPriceBottom + price' },
+  { field: 'shape', desc: 'circle / square / arrowUp / arrowDown' },
+  { field: 'color / text / size / id', desc: '外观与标识' },
+  { field: 'autoScale', desc: '缩放计算包含标记' },
+  { field: 'zOrder', desc: 'top / aboveSeries / normal' },
+];
+
+/** 插件体系：自绘接口 */
+const LW_PRIMITIVE_TABLE: { hook: string; role: string }[] = [
+  { hook: 'priceAxisViews / timeAxisViews', role: '在坐标轴上绘制标签（如自定义指标值）' },
+  { hook: 'paneViews / priceAxisPaneViews / timeAxisPaneViews', role: '在主图区 / 轴区绘制任意图形' },
+  { hook: 'autoscaleInfo()', role: '扩展自动缩放范围（把自绘图形纳入可见范围）' },
+  { hook: 'attached / detached', role: '生命周期钩子' },
+  { hook: 'hitTest(x, y)', role: '自定义命中检测 + 自定义光标' },
+  { hook: 'updateAllViews()', role: '视口变化时重算' },
+];
+
+/** 性能特性 */
+const LW_PERF_TABLE: { feature: string; desc: string }[] = [
+  { feature: 'Canvas 渲染', desc: '非 SVG/DOM，万级数据点流畅' },
+  { feature: '逻辑范围渲染', desc: '只绘制可见区域数据' },
+  { feature: '数据融合（Conflation）', desc: '柱间距 < 0.5px 自动合并数据点；enableConflation + conflationThresholdFactor 可调；precomputeConflationOnInit 后台预计算（>10K 点建议开启）' },
+  { feature: '增量更新', desc: 'update() 只重绘变动，比 setData 全量高效（实时行情标准做法）' },
+  { feature: '单一依赖', desc: '仅 fancy-canvas，无重依赖树' },
+  { feature: 'autoscaleInfoProvider', desc: '可覆盖缩放计算，避免重复布局抖动' },
+];
+
+/** 事件系统汇总 */
+const LW_EVENT_TABLE: { event: string; api: string; use: string }[] = [
+  { event: '点击', api: 'chart.subscribeClick', use: '选中交互' },
+  { event: '双击', api: 'chart.subscribeDblClick', use: '重置缩放等' },
+  { event: '十字线移动', api: 'chart.subscribeCrosshairMove', use: '十字线行情联动、tooltip' },
+  { event: '数据变更', api: 'series.subscribeDataChanged', use: '数据同步' },
+  { event: '可见范围变化', api: 'timeScale.subscribeVisibleTimeRangeChange / subscribeVisibleLogicalRangeChange', use: '滚动加载历史、懒加载' },
+  { event: '时间轴尺寸变化', api: 'timeScale.subscribeSizeChange', use: '布局适配' },
+];
+
+/** 事件系统：MouseEventParams 关键字段 */
+const LW_MOUSE_PARAMS_TABLE: { field: string; desc: string }[] = [
+  { field: 'time / logical / point / paneIndex', desc: '时间 / 逻辑索引 / 屏幕坐标 / 所在窗格' },
+  { field: 'seriesData', desc: 'Map：当前点所有系列的数据' },
+  { field: 'hoveredInfo', desc: '命中的图元类型：series-point / series-line / series-range / marker / price-line / primitive / custom' },
+];
+
+/** 坐标系统 */
+const LW_COORD_TABLE: { concept: string; desc: string }[] = [
+  { concept: 'Logical（逻辑索引）', desc: '数据在时间轴上的整数索引；LogicalRange 是可见索引区间，支持用索引精确设置可视范围' },
+  { concept: 'Time（时间）', desc: '真实时间值（Time 类型）；setVisibleRange 不能外推已有数据' },
+];
+
+/** 与常见需求对照 */
+const LW_NEEDS_TABLE: { need: string; usage: string }[] = [
+  { need: '实时行情增量推送', usage: 'update() + timeScale.shiftVisibleRangeOnNewBar' },
+  { need: '滚动加载历史', usage: 'subscribeVisibleLogicalRangeChange + barsInLogicalRange 判断余量' },
+  { need: '买卖点标记', usage: 'createSeriesMarkers' },
+  { need: '最新价线', usage: 'priceLineVisible: true（默认开启）' },
+  { need: '自定义水平参考线', usage: 'series.createPriceLine({ price, title, color })' },
+  { need: '自定义指标（MACD/KDJ）', usage: '自定义系列或 attachPrimitive 在窗格 / 轴绘制' },
+  { need: '成交量柱', usage: 'Histogram 序列绑定覆盖价格轴' },
+  { need: '多窗口 K 线（主图 + 副图）', usage: 'chart.addPane() + series.moveToPane()' },
+  { need: '导出图片', usage: 'chart.takeScreenshot().toDataURL()' },
+  { need: '对数轴', usage: 'priceScale.mode: PriceScaleMode.Logarithmic' },
+  { need: '多图十字线联动', usage: 'setCrosshairPosition / subscribeCrosshairMove' },
+];
+
+/** 许可与归属 */
+const LW_LICENSE_TABLE: { way: string; desc: string }[] = [
+  { way: '方式一', desc: '保留 layout.attributionLogo: true（默认，图上显示 TradingView logo）' },
+  { way: '方式二', desc: '页面自行放指向 tradingview.com 的链接，然后可设 attributionLogo: false（本项目采用，已在代码注释保留声明）' },
+];
+
 function LightweightDocs() {
   return (
     <div className="lw-docs">
@@ -221,6 +478,609 @@ function LightweightDocs() {
         清晰的对象模型——序列（Series）表达数据、面板（Pane）承载序列、价格轴与时间轴负责
         映射——上层能力（指标、标记、水印、自定义图元）全部通过可组合的 API 挂上去。
       </p>
+
+      {/* ==================== 第一节：功能总览（所有功能表格集中于此） ==================== */}
+      <section className="lw-doc-section">
+        <h3>功能总览</h3>
+        <p>
+          本页基于项目实际安装的 <code>lightweight-charts@5.2.1</code>（TradingView 出品，
+          Apache-2.0，约 45kb gzip）。下表集中列出全部功能点：基本信息、核心架构、数据接入、
+          图表类型、图表配置、API 方法清单、插件体系、性能特性、事件系统、坐标系统、
+          常见需求对照与许可归属，后续章节逐一展开讲解。
+        </p>
+
+        {/* —— 基本信息 —— */}
+        <h4 className="lw-subhead">基本信息</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <tbody>
+              {LW_BASIC_TABLE.map(([k, v]) => (
+                <tr key={k}>
+                  <th className="lw-fkey">{k}</th>
+                  <td>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 核心架构：三种水平轴 —— */}
+        <h4 className="lw-subhead">核心架构：三种水平轴（HorzScale）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>类型</th>
+                <th>入口函数</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_HORZ_SCALE_TABLE.map((r) => (
+                <tr key={r.type}>
+                  <td>{r.type}</td>
+                  <td><code>{r.entry}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          扩展机制：<code>createChartEx()</code> + 自定义 <code>IHorzScaleBehavior</code>
+          可实现任意类型横轴（类别轴、K 线索引轴等）。
+        </p>
+
+        {/* —— 核心架构：Time 类型 —— */}
+        <h4 className="lw-subhead">核心架构：Time 时间类型（三种写法）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>写法</th>
+                <th>示例</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_TIME_TABLE.map((r) => (
+                <tr key={r.form}>
+                  <td><code>{r.form}</code></td>
+                  <td><code>{r.example}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 核心架构：三层 API —— */}
+        <h4 className="lw-subhead">核心架构：三层 API 结构</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>入口</th>
+                <th>接口</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_CORE_API_TABLE.map((r) => (
+                <tr key={r.entry}>
+                  <td><code>{r.entry}</code></td>
+                  <td>{r.iface}</td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 数据接入：数据模型 —— */}
+        <h4 className="lw-subhead">数据接入：数据模型</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>数据接口</th>
+                <th>字段</th>
+                <th>适用系列</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_DATA_MODEL_TABLE.map((r) => (
+                <tr key={r.iface}>
+                  <td><code>{r.iface}</code></td>
+                  <td>{r.fields}</td>
+                  <td>{r.series}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 数据接入：数据写入 API —— */}
+        <h4 className="lw-subhead">数据接入：数据写入 API（ISeriesApi）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>方法</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_DATA_WRITE_TABLE.map((r) => (
+                <tr key={r.api}>
+                  <td><code>{r.api}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 图表类型 —— */}
+        <h4 className="lw-subhead">图表类型（Series Type，7 种）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>系列</th>
+                <th>定义常量</th>
+                <th>样式选项</th>
+                <th>要点</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_SERIES_TABLE.map((r) => (
+                <tr key={r.series}>
+                  <td>{r.series}</td>
+                  <td><code>{r.entry}</code></td>
+                  <td><code>{r.style}</code></td>
+                  <td>{r.point}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          系列通用选项（<code>SeriesOptionsCommon</code>）：<code>title</code> / <code>visible</code>
+          / <code>priceScaleId</code>（绑定左 / 右 / 覆盖轴）、<code>lastValueVisible</code>
+          （最后价标签）、<code>priceLine*</code>（最新价横线）、<code>baseLine*</code>（基准线）、
+          <code>priceFormat</code>、<code>autoscaleInfoProvider</code>、
+          <code>hitTestTolerance</code>（点击命中容差，默认 3px）、<code>conflationThresholdFactor</code>。
+          线样式枚举：<code>LineStyle</code>（Solid / Dotted / Dashed / LargeDashed / SparseDotted）、
+          <code>LineType</code>（Simple / WithSteps / Curved）、<code>LineWidth</code>（1~4）、
+          <code>LastPriceAnimationMode</code>（最新价点动画）。
+        </p>
+
+        {/* —— 价格格式 —— */}
+        <h4 className="lw-subhead">价格格式（PriceFormat）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>类型</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_PRICE_FORMAT_TABLE.map((r) => (
+                <tr key={r.type}>
+                  <td><code>{r.type}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 图表配置：尺寸与缩放 —— */}
+        <h4 className="lw-subhead">图表配置：尺寸与缩放</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>选项</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_SIZE_TABLE.map((r) => (
+                <tr key={r.opt}>
+                  <td><code>{r.opt}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 图表配置：布局 / 光标 / 网格 / 交互 / 本地化 —— */}
+        <h4 className="lw-subhead">图表配置：布局 / 光标 / 网格 / 交互 / 本地化</h4>
+        <ul>
+          <li>
+            <strong>布局（LayoutOptions）</strong>：<code>background</code> 纯色或垂直渐变
+            （ColorType.Solid / VerticalGradient）；<code>textColor / fontSize / fontFamily</code>
+            坐标轴文字；<code>panes</code> 分隔线颜色与拖拽调高开关；
+            <code>attributionLogo</code>（TradingView 归属 logo，本项目关闭后在文档保留声明）；
+            <code>colorSpace</code>（srgb / display-p3）；<code>colorParsers</code>（扩展
+            display-p3、lab、lch、oklab 等自定义颜色格式解析）。
+          </li>
+          <li>
+            <strong>十字光标（CrosshairOptions）</strong>：<code>mode</code>
+            （Normal / Magnet 磁吸到最新价（默认）/ Hidden / MagnetOHLC）；
+            <code>vertLine / horzLine</code> 颜色宽度样式；<code>doNotSnapToHiddenSeriesIndices</code>。
+          </li>
+          <li>
+            <strong>网格（GridOptions）</strong>：<code>vertLines / horzLines</code> 颜色、线型、可见性。
+          </li>
+          <li>
+            <strong>交互</strong>：<code>handleScroll</code>（mouseWheel / pressedMouseMove /
+            horzTouchDrag / vertTouchDrag）、<code>handleScale</code>（mouseWheel / pinch /
+            axisPressedMouseMove / axisDoubleClickReset）、<code>kineticScroll</code> 惯性滚动、
+            <code>trackingMode</code> 移动端长按退出方式、<code>hoveredSeriesOnTop</code> 悬停系列置顶。
+          </li>
+          <li>
+            <strong>本地化（LocalizationOptions）</strong>：<code>locale</code>、<code>priceFormatter</code>
+            / <code>tickmarksPriceFormatter</code>、<code>percentageFormatter</code> / <code>tickmarksPercentageFormatter</code>。
+          </li>
+        </ul>
+
+        {/* —— 图表配置：时间轴 —— */}
+        <h4 className="lw-subhead">图表配置：时间轴（TimeScaleOptions，最常用）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>选项</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_TIMESCALE_TABLE.map((r) => (
+                <tr key={r.opt}>
+                  <td><code>{r.opt}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 图表配置：价格轴 —— */}
+        <h4 className="lw-subhead">图表配置：价格轴（PriceScaleOptions）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>选项</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_PRICESCALE_TABLE.map((r) => (
+                <tr key={r.opt}>
+                  <td><code>{r.opt}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          左右 / 覆盖三组价格轴可独立配置：<code>leftPriceScale</code> / <code>rightPriceScale</code>
+          / <code>overlayPriceScales</code>。
+        </p>
+
+        {/* —— API 方法清单 —— */}
+        <h4 className="lw-subhead">API 方法清单：IChartApi</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>方法</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_CHART_API_TABLE.map((r) => (
+                <tr key={r.api}>
+                  <td><code>{r.api}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 className="lw-subhead">API 方法清单：ITimeScaleApi</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>方法</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_TIMESCALE_API_TABLE.map((r) => (
+                <tr key={r.api}>
+                  <td><code>{r.api}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 className="lw-subhead">API 方法清单：IPriceScaleApi</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>方法</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_PRICESCALE_API_TABLE.map((r) => (
+                <tr key={r.api}>
+                  <td><code>{r.api}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 className="lw-subhead">API 方法清单：ISeriesApi（数据方法见上）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>方法</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_SERIES_API_TABLE.map((r) => (
+                <tr key={r.api}>
+                  <td><code>{r.api}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 className="lw-subhead">API 方法清单：IPaneApi</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>方法</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_PANE_API_TABLE.map((r) => (
+                <tr key={r.api}>
+                  <td><code>{r.api}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 插件体系 —— */}
+        <h4 className="lw-subhead">插件体系：内置官方插件（Primitives）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>函数</th>
+                <th>功能</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_PLUGIN_TABLE.map((r) => (
+                <tr key={r.fn}>
+                  <td><code>{r.fn}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 className="lw-subhead">插件体系：系列标记属性（SeriesMarker）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>属性</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_MARKER_TABLE.map((r) => (
+                <tr key={r.field}>
+                  <td><code>{r.field}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 className="lw-subhead">插件体系：自绘插件接口</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>钩子</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_PRIMITIVE_TABLE.map((r) => (
+                <tr key={r.hook}>
+                  <td><code>{r.hook}</code></td>
+                  <td>{r.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          系列级 <code>ISeriesPrimitive</code> 挂到 <code>ISeriesApi.attachPrimitive</code>；
+          窗格级 <code>IPanePrimitive</code> 挂到 <code>IPaneApi.attachPrimitive</code>，作用于整个
+          窗格（含轴区）。渲染器 <code>draw(target, utils)</code> 直接操作 Canvas 上下文；
+          <code>drawBackground()</code> 画在背景层；<code>zOrder()</code> 控制绘制层级。
+          自定义系列用 <code>addCustomSeries()</code>：<code>ICustomSeriesPaneView</code> 定义
+          数据→价格换算（<code>priceValueBuilder</code>）、绘制与命中测试，支持数据压缩与
+          <code>customValues</code> 透传。
+        </p>
+
+        {/* —— 性能特性 —— */}
+        <h4 className="lw-subhead">性能特性</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>特性</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_PERF_TABLE.map((r) => (
+                <tr key={r.feature}>
+                  <td>{r.feature}</td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 事件系统 —— */}
+        <h4 className="lw-subhead">事件系统汇总</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>事件</th>
+                <th>API</th>
+                <th>典型用途</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_EVENT_TABLE.map((r) => (
+                <tr key={r.event}>
+                  <td>{r.event}</td>
+                  <td><code>{r.api}</code></td>
+                  <td>{r.use}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h4 className="lw-subhead">事件参数（MouseEventParams 关键字段）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>字段</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_MOUSE_PARAMS_TABLE.map((r) => (
+                <tr key={r.field}>
+                  <td><code>{r.field}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 坐标系统 —— */}
+        <h4 className="lw-subhead">坐标系统（Logical vs Time）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>概念</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_COORD_TABLE.map((r) => (
+                <tr key={r.concept}>
+                  <td><code>{r.concept}</code></td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          两者可互转：<code>logicalToCoordinate</code> / <code>timeToIndex</code> /
+          <code>coordinateToTime</code> 等。
+        </p>
+
+        {/* —— 与常见需求对照 —— */}
+        <h4 className="lw-subhead">与常见需求对照</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>需求</th>
+                <th>用法</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_NEEDS_TABLE.map((r) => (
+                <tr key={r.need}>
+                  <td>{r.need}</td>
+                  <td><code>{r.usage}</code></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* —— 许可与归属 —— */}
+        <h4 className="lw-subhead">许可与归属（Apache-2.0 要求）</h4>
+        <div className="lw-doc-table-wrap">
+          <table className="lw-doc-table">
+            <thead>
+              <tr>
+                <th>方式</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LW_LICENSE_TABLE.map((r) => (
+                <tr key={r.way}>
+                  <td>{r.way}</td>
+                  <td>{r.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          完整功能点整理见 <code>docs/Lightweight-Charts 详细功能点整理.md</code>，
+          页面数据与之同源。
+        </p>
+      </section>
 
       <section className="lw-doc-section">
         <h3>核心对象模型</h3>
@@ -325,9 +1185,12 @@ function LightweightDocs() {
         <p>
           面板内序列的纵向占位由价格刻度控制，且<strong>取副图刻度必须经
           <code>{'chart.panes()[1].priceScale(id)'}</code></strong>——<code>chart.priceScale(id)</code>
-          只查主图。本页成交量面板用
-          <code>{'chart.panes()[1].priceScale(\'vol\').applyOptions({ scaleMargins: { top: 0.5, bottom: 0 } })'}</code>
+          只查主图。本页成交量面板的序列<strong>不写 priceScaleId</strong>，自动挂到该
+          pane 的默认右侧刻度（官方 panes 教程的写法），再用
+          <code>{'chart.panes()[1].priceScale(\'right\').applyOptions({ scaleMargins: { top: 0.5, bottom: 0 } })'}</code>
           ：top 0.5 让最高量能柱恰好到面板中线（量能柱占下面一半，视觉上不高不矮）。
+          注意不要用命名刻度（如 <code>{'priceScaleId: \'vol\''}</code>）——命名/overlay
+          刻度库源码里永远不配轴 widget，会让该 pane 右轴只剩边框、一个刻度数字都没有。
         </p>
       </section>
 

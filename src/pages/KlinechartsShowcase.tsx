@@ -66,6 +66,7 @@ const BASIC_TABLE: [string, string][] = [
   ['技术栈', 'HTML5 Canvas 渲染，零运行时依赖'],
   ['仓库', 'https://github.com/klinecharts/KLineChart'],
   ['官网', 'https://www.klinecharts.com'],
+  ['Pro 版本', 'https://pro.klinecharts.com'],
 ];
 
 /** 顶层 API */
@@ -789,7 +790,15 @@ function KcDocs() {
               {BASIC_TABLE.map(([k, v]) => (
                 <tr key={k}>
                   <th className="kc-fkey">{k}</th>
-                  <td>{v}</td>
+                  <td>
+                    {k === '仓库' || k === '官网' || k === 'Pro 版本' ? (
+                      <a className="kc-external-link" href={v} target="_blank" rel="noreferrer" title={v}>
+                        {v}
+                      </a>
+                    ) : (
+                      v
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

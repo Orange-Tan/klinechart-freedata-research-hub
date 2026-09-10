@@ -107,6 +107,10 @@ export const KlinechartsShowcaseChart = forwardRef<
   const symbolRef = useRef(symbol);
   // 已把哪份 (symbol, period) 数据完整喂给过 init（决定增量 or 全量重载）
   const loadedKeyRef = useRef('');
+  // 父级已清空数据（setHistory([])）而图表尚未重载时的待重载标志：清空发生在
+  // 子组件 effect 之后，此时若已把新 key 喂过旧数据，新数据到达时会误走增量；
+  // 置此标志后，数据到达走全量 resetData 而不是把最后一根拼到旧序列上。
+  const pendingReloadRef = useRef(false);
   // 副图 VOL 只建一次
   const volCreatedRef = useRef(false);
   // VOL pane 的 id（createIndicator 后从 getIndicators 取，供 setPaneOptions 反算高度）
@@ -289,13 +293,22 @@ export const KlinechartsShowcaseChart = forwardRef<
   // 数据接入：同一 (symbol, period) 的后续更新走增量；换了交易对或周期则
   // 全量重载（init 会读取 dataRef 里的最新数据）
   useEffect(() => {
-    if (data.length === 0) return;
     const chart = chartRef.current;
     if (!chart) return;
 
+    if (data.length === 0) {
+      // 父级已清空数据（symbol/period/source/historyLimit/live 切换都会先
+      // setHistory([]) 再重新拉取）——标记"下一次数据到达必须全量重载"。
+      // 不能在这里直接 resetData：清空发生在子组件 effect 之后，此时图表里
+      // 仍是上一份数据，立即重置只会再次读到旧 dataRef。
+      pendingReloadRef.current = true;
+      return;
+    }
+
     const key = `${symbol}/${period.type}/${period.span}`;
-    if (key !== loadedKeyRef.current) {
-      // 首帧数据到达 / 交易对或周期已切换：整批重载
+    if (key !== loadedKeyRef.current || pendingReloadRef.current) {
+      // 首帧数据到达 / 交易对或周期已切换 / 父级清空过数据：整批重载
+      pendingReloadRef.current = false;
       chart.resetData();
       loadedKeyRef.current = key;
     } else if (live) {

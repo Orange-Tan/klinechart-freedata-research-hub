@@ -20,6 +20,8 @@
 | 📊 **多图对比** | 同一份实时 K 线数据同源喂给 4 个库横向对比：渲染效果 / 交互差异 / 数据一致性 |
 | 📖 **图表调研** | 开源图表库选型调研报告（lightweight-charts / KLineChart / HQChart / ECharts / uPlot…），含功能矩阵、优缺点、技术路线建议 |
 | 📡 **数据调研** | A股 / 美股 / 加密货币 / 期货 / 基金 **五大市场 40 个可用免费数据源**（已剔除停服/反爬/不提供实时行情的源）按角色与历史 K 线能力排序，名称点击直达官网/开源仓库，**每源一键连通性检测 + 一键检测全部** |
+| 📖 **轻量库详情** | Lightweight-Charts 单库详解：全功能大图（序列/指标/标记/水印/趋势线/价格线/多面板功能开关）+ 分节库文档，首节「功能总览」将全部功能点表格化集中展示 |
+| 📖 **K线库详情** | klinecharts 单库详解：结构同上，功能开关含 20+ 内置指标 / 画线工具 / 周期切换 / 副图多面板，首节「功能总览」同样表格化集中展示 |
 
 ### 四大图表库
 
@@ -42,21 +44,28 @@
 
 ![数据调研页](docs/img/data-research.png)
 
+**📖 单库详解 —— 全功能大图 + 表格化文档（轻量库 / K线库同构）**
+
+![轻量库详解页](docs/img/showcase-pages.png)
+
 ---
 
 ## 🧭 目录导航
 
 ```
 src/
-├── App.tsx                    # 侧边栏 + 三页切换（切页卸载/重挂载）
+├── App.tsx                    # 侧边栏 + 五页切换（切页卸载/重挂载）
 ├── pages/
 │   ├── Dashboard.tsx          # 📊 多图对比（多源轮询订阅主逻辑）
 │   ├── ResearchReport.tsx     # 📖 图表调研报告
 │   ├── DataResearch.tsx       # 📡 数据调研页（连通性检测）
+│   ├── LightweightShowcase.tsx / .css  # 📖 轻量库详解页（大图 + 功能总览文档）
+│   ├── KlinechartsShowcase.tsx / .css  # 📖 K线库详解页（大图 + 功能总览文档）
+│   ├── showcaseShared.ts      # 两详页共享逻辑：控件 + 大图 stage + 底部 loading/错误条
 │   └── dataResearchData.ts    # 数据源元数据注册表（61 源，页面只展示 40 个可用源）
 ├── components/
 │   ├── Icon.tsx / phosphorIcons.ts  # 全站图标：本地打包 Phosphor 图标（MIT，不依赖在线 API）
-│   └── charts/               # 4 库图表适配层（踩坑重灾区）
+│   └── charts/               # 4 库图表适配层 + 两详页图表（踩坑重灾区）
 ├── data/
 │   ├── tencent.ts            # 数据源适配器：腾讯财经（REST + 轮询 + 竞态守卫）
 │   ├── eastmoney.ts          # 东方财富数据源适配器
@@ -69,6 +78,8 @@ src/
 docs/
 ├── 图表库调研报告.md            # 选型调研（stars/协议/四大库优劣势）
 ├── 免费行情数据源调研报告.md     # 五大市场免费数据源实测调研
+├── Lightweight-Charts 详细功能点整理.md   # 轻量库详解页文档源稿（页面首节「功能总览」即此整理）
+├── KLineChart(klinecharts) 详细功能点整理.md # klinecharts 详解页文档源稿
 └── img/                        # README 预览图
 ```
 
@@ -113,6 +124,7 @@ npx playwright test  # 终端 2：冒烟测试
 
 - `dashboard.spec.ts`：4 库渲染、切换交易对/周期同步刷新、无 console error
 - `datareport.spec.ts`：数据调研页渲染、一键检测全完成、无 pageerror
+- `showcase.spec.ts`：轻量库 / K线库两详页渲染、功能开关、A股搜索、无 console error
 
 ### 🤖 交给 AI 智能体自动安装
 
@@ -167,6 +179,7 @@ App ── 侧边栏切页（卸载/重挂载）──► Dashboard
 - **单向数据流**：一个数据源 → 4 库，同源同参同数据，横向对比公平
 - **切页卸载/重挂载**：看板回后台即停轮询，切回重新拉取（省请求且数据新鲜）
 - **适配层独立**：每个库一个组件，props 收敛为 `{ data, symbol, period, live }`，差异全封装在组件内部
+- **详页同构**：轻量库 / K线库两详页共用控件与 stage 布局（`showcaseShared.ts`），数据源切换先清空再拉取，配 `pendingReloadRef` 待重载标志防止增量拼错序列
 
 ---
 

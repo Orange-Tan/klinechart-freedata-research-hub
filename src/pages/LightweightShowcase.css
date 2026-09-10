@@ -313,6 +313,27 @@
   overflow-x: auto;
 }
 
+/* ===== 功能总览节：与 klinecharts 详页同构的表格体系（h4 小节标题 + 基本信息键列） ===== */
+.lw-docs .lw-subhead {
+  margin: 22px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #26a69a;
+  letter-spacing: 0.3px;
+}
+
+/* 基本信息表：键列固定窄，值列自由伸展 */
+.lw-docs .lw-fkey {
+  white-space: nowrap;
+  width: 1%;
+  padding: 10px 14px;
+  text-align: left;
+  background: #111625;
+  color: #8b949e;
+  font-weight: 600;
+  font-size: 13px;
+}
+
 @media (max-width: 900px) {
   /* 窄屏 stage 高度改由 16:9 比例换算：高度 = 宽度 / 16 * 9，
      避免大图在窄容器下占据过高版面 */

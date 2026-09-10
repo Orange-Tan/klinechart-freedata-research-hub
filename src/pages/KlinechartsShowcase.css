@@ -365,6 +365,24 @@
   color: #7aa2f7;
 }
 
+/* 基本信息表里的外链（仓库 / 官网 / Pro 版本）：悬停变青 + 下划线，箭头后缀标注外链 */
+.kc-docs .kc-external-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-bottom-color 0.15s;
+  word-break: break-all; /* 长 URL 在窄屏换行，避免撑破表格 */
+}
+.kc-docs .kc-external-link::after {
+  content: ' ↗';
+  font-size: 10px;
+  opacity: 0.55;
+}
+.kc-docs .kc-external-link:hover {
+  color: #26a69a;
+  border-bottom-color: #26a69a;
+}
+
 /* 表格（与报告页 .report-table 同骨架，行内微调） */
 .kc-docs .report-table-wrap {
   margin: 12px 0;

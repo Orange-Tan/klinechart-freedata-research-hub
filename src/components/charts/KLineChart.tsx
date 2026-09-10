@@ -55,6 +55,10 @@ export function KLineChart({ data, symbol, period, live = true, resetKey }: KLin
   const symbolRef = useRef(symbol);
   // 已把哪份 (symbol, period) 数据完整喂给过 init（决定增量 or 全量重载）
   const loadedKeyRef = useRef('');
+  // 父级已清空数据（setHistory([])）而图表尚未重载时的待重载标志：清空发生在
+  // 子组件 effect 之后，此时若已把新 key 喂过旧数据，新数据到达时会误走增量；
+  // 置此标志后，数据到达走全量 resetData 而不是把最后一根拼到旧序列上。
+  const pendingReloadRef = useRef(false);
   // 副图 VOL 只建一次
   const volCreatedRef = useRef(false);
   // subscribeBar 注入的增量回调（Store._addData(data,'update')）
@@ -165,13 +169,20 @@ export function KLineChart({ data, symbol, period, live = true, resetKey }: KLin
   // 数据接入：同一 (symbol, period, resetKey) 的后续更新走增量；换了交易对、
   // 周期或历史根数（resetKey）则全量重载（init 会读取 dataRef 里的最新数据）
   useEffect(() => {
-    if (data.length === 0) return;
     const chart = chartRef.current;
     if (!chart) return;
 
+    if (data.length === 0) {
+      // 父级已清空数据（symbol/period/live/historyLimit 切换都会先
+      // setHistory([]) 再重新拉取）——标记"下一次数据到达必须全量重载"。
+      pendingReloadRef.current = true;
+      return;
+    }
+
     const key = `${symbol}/${period}/${resetKey ?? ''}`;
-    if (key !== loadedKeyRef.current) {
-      // 首帧数据到达 / 交易对、周期或历史根数已切换：整批重载
+    if (key !== loadedKeyRef.current || pendingReloadRef.current) {
+      // 首帧数据到达 / 交易对、周期或历史根数已切换 / 父级清空过数据：整批重载
+      pendingReloadRef.current = false;
       chart.resetData();
       loadedKeyRef.current = key;
     } else if (live) {
