@@ -1,9 +1,15 @@
 import { useRef, useState } from 'react';
 import { useKlineData } from '../hooks/useKlineData';
-import type { KlinePeriod } from '../types/ohlcv';
+import type { KlinePeriod, StockResult } from '../types/ohlcv';
 import { PERIOD_LABEL } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
 import { SHOWCASE_SOURCE_DEFAULTS, supportedPeriodsOf } from './showcaseShared';
+import {
+  DEFAULT_HISTORY_LIMIT,
+  HISTORY_LIMITS,
+  isSourceOrNetworkError,
+  useStockSearch,
+} from './controlsShared';
 import {
   KlinechartsShowcaseChart,
   toPeriod,
@@ -277,16 +283,24 @@ function periodLabelOf(period: KlinePeriod): string {
  */
 export function KlinechartsShowcase() {
   const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
-  const [period, setPeriod] = useState<KlinePeriod>('1d');
-  const chartRef = useRef<KlinechartsShowcaseChartRef>(null);
   const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
+  const [symbol, setSymbol] = useState<string>(def.symbol);
+  const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
+  const [period, setPeriod] = useState<KlinePeriod>('1d');
+  const [live, setLive] = useState(true);
+  const [historyLimit, setHistoryLimit] = useState<number>(DEFAULT_HISTORY_LIMIT);
+  const chartRef = useRef<KlinechartsShowcaseChartRef>(null);
   const periodOptions = supportedPeriodsOf(sourceId);
+
+  // A 股搜索（仅数据源声明了 searchSymbols 能力时生效；Binance 等源下静默清空）
+  const { query, setQuery, results, setResults, searching, reset: resetSearch } = useStockSearch(sourceId);
 
   const { history, error } = useKlineData({
     sourceId,
-    symbol: def.symbol,
+    symbol,
     period,
-    historyLimit: 500,
+    historyLimit,
+    live,
   });
 
   const bars = history.length;
@@ -347,13 +361,26 @@ export function KlinechartsShowcase() {
 
   // —— 数据源切换 ——
 
-  /** 切换数据源：标的重置为该源默认，周期回退到该源支持的第一个周期 */
+  /** 切换数据源：标的重置为该源默认，搜索清空，周期回退到该源支持的第一个周期 */
   function handleSourceChange(next: DataSourceId) {
+    const d = SHOWCASE_SOURCE_DEFAULTS[next];
     setSourceId(next);
+    setSymbol(d.symbol);
+    setSymbolLabel(d.label);
+    resetSearch();
     const options = supportedPeriodsOf(next);
     if (!options.includes(period)) setPeriod(options[0]);
     setCrosshairData(null);
     pushStatus(`数据源已切换为 ${getDataSource(next).label}`, 'info');
+  }
+
+  /** 从搜索下拉选中标的：切到该标的，清空搜索框与下拉结果 */
+  function pickStock(r: StockResult) {
+    setSymbol(r.symbol);
+    setSymbolLabel(r.name);
+    resetSearch();
+    setCrosshairData(null);
+    pushStatus(`已切换标的为 ${r.name}（${r.symbol}）`, 'info');
   }
 
   // —— 控制栏动作 ——
@@ -498,6 +525,19 @@ export function KlinechartsShowcase() {
 
         <div className="kc-group">
           <label className="kc-field">
+            <span className="kc-field-name">标的</span>
+            <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+              {def.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="kc-group">
+          <label className="kc-field">
             <span className="kc-field-name">周期</span>
             <select value={period} onChange={(e) => changePeriod(e.target.value as KlinePeriod)}>
               {periodOptions.map((p) => (
@@ -507,6 +547,51 @@ export function KlinechartsShowcase() {
               ))}
             </select>
           </label>
+        </div>
+
+        <label className="kc-field kc-live">
+          <span className="kc-field-name">实时更新</span>
+          <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
+        </label>
+
+        <div className="kc-group">
+          <label className="kc-field">
+            <span className="kc-field-name">历史K线</span>
+            <select value={historyLimit} onChange={(e) => setHistoryLimit(Number(e.target.value))}>
+              {HISTORY_LIMITS.map((n) => (
+                <option key={n} value={n}>
+                  {n} 根
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="stock-search">
+          <input
+            type="text"
+            className="stock-search-input"
+            placeholder="搜索 A 股股票/指数"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setResults([]);
+            }}
+          />
+          {searching && <span className="search-spinner">…</span>}
+          {results.length > 0 && (
+            <ul className="search-dropdown">
+              {results.map((r) => (
+                <li key={r.symbol}>
+                  <button type="button" onClick={() => pickStock(r)}>
+                    <span className="search-name">{r.name}</span>
+                    <span className="search-symbol">{r.symbol}</span>
+                    {r.type && <span className="search-type">{r.type}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="kc-group">
@@ -598,9 +683,9 @@ export function KlinechartsShowcase() {
         <KlinechartsShowcaseChart
           ref={chartRef}
           data={history}
-          symbol={def.symbol}
+          symbol={symbol}
           period={toPeriod(period)}
-          live
+          live={live}
           onCrosshair={(data) => crosshairCbRef.current(data as unknown)}
           onVisibleRange={(data) => visibleRangeCbRef.current(data as unknown)}
         />
@@ -611,7 +696,8 @@ export function KlinechartsShowcase() {
         {/* 数据异常时图表保持显示（空态），把异常提示放在大图右上角 */}
         {error && (
           <div className="kc-stage-error">
-            数据异常：{def.label} {periodLabelOf(period)} {error}
+            数据异常：{symbolLabel} {periodLabelOf(period)} {error}
+            {isSourceOrNetworkError(error) && '（若为 WAF 拦截等外部因素，可切换数据源或周期重试）'}
           </div>
         )}
       </section>

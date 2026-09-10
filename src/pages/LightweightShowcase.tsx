@@ -1,9 +1,15 @@
 import { useRef, useState } from 'react';
 import { useKlineData } from '../hooks/useKlineData';
 import { PERIOD_LABEL } from '../types/ohlcv';
-import type { KlinePeriod } from '../types/ohlcv';
+import type { KlinePeriod, StockResult } from '../types/ohlcv';
 import { dataSourceList, type DataSourceId } from '../data';
 import { SHOWCASE_SOURCE_DEFAULTS, supportedPeriodsOf } from './showcaseShared';
+import {
+  DEFAULT_HISTORY_LIMIT,
+  HISTORY_LIMITS,
+  isSourceOrNetworkError,
+  useStockSearch,
+} from './controlsShared';
 import {
   LightweightShowcaseChart,
   type LightweightShowcaseChartRef,
@@ -19,26 +25,50 @@ const MIN_BARS = 60;
  */
 export function LightweightShowcase() {
   const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
-  const [period, setPeriod] = useState<KlinePeriod>('1d');
-  const chartRef = useRef<LightweightShowcaseChartRef>(null);
   const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
+  const [symbol, setSymbol] = useState<string>(def.symbol);
+  const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
+  const [period, setPeriod] = useState<KlinePeriod>('1d');
+  const [live, setLive] = useState(true);
+  const [historyLimit, setHistoryLimit] = useState<number>(DEFAULT_HISTORY_LIMIT);
+  const chartRef = useRef<LightweightShowcaseChartRef>(null);
   const periodOptions = supportedPeriodsOf(sourceId);
+
+  // A 股搜索（仅数据源声明了 searchSymbols 能力时生效；Binance 等源下静默清空）
+  const { query, setQuery, results, setResults, searching, reset: resetSearch } = useStockSearch(sourceId);
 
   const { history, error } = useKlineData({
     sourceId,
-    symbol: def.symbol,
+    symbol,
     period,
-    historyLimit: 500,
+    historyLimit,
+    live,
   });
 
   const bars = history.length;
   const ready = bars >= MIN_BARS;
 
-  // 数据源切换：标的重置为该源默认；周期回退到该源支持的第一个周期
+  // 数据源切换：标的重置为该源默认；搜索清空；周期回退到该源支持的第一个周期
   function handleSourceChange(next: DataSourceId) {
+    const d = SHOWCASE_SOURCE_DEFAULTS[next];
     setSourceId(next);
+    setSymbol(d.symbol);
+    setSymbolLabel(d.label);
+    resetSearch();
     const options = supportedPeriodsOf(next);
     if (!options.includes(period)) setPeriod(options[0]);
+  }
+
+  // 从搜索下拉选中标的：切到该标的，清空搜索框与下拉结果
+  function pickStock(r: StockResult) {
+    setSymbol(r.symbol);
+    setSymbolLabel(r.name);
+    resetSearch();
+  }
+
+  // 周期切换（保持与 handleSourceChange 一致：只改周期，不动标的/搜索）
+  function handlePeriodChange(p: KlinePeriod) {
+    setPeriod(p);
   }
 
   // 大图功能开关（对应下方文档的各功能分节）：默认全关，
@@ -72,8 +102,18 @@ export function LightweightShowcase() {
             </select>
           </label>
           <label className="lw-field">
+            标的
+            <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+              {def.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="lw-field">
             周期
-            <select value={period} onChange={(e) => setPeriod(e.target.value as KlinePeriod)}>
+            <select value={period} onChange={(e) => handlePeriodChange(e.target.value as KlinePeriod)}>
               {periodOptions.map((p) => (
                 <option key={p} value={p}>
                   {PERIOD_LABEL[p]}
@@ -81,6 +121,46 @@ export function LightweightShowcase() {
               ))}
             </select>
           </label>
+          <label className="lw-field lw-live">
+            <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
+            实时更新
+          </label>
+          <label className="lw-field">
+            历史K线
+            <select value={historyLimit} onChange={(e) => setHistoryLimit(Number(e.target.value))}>
+              {HISTORY_LIMITS.map((n) => (
+                <option key={n} value={n}>
+                  {n} 根
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="stock-search">
+            <input
+              type="text"
+              className="stock-search-input"
+              placeholder="搜索 A 股股票/指数"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setResults([]);
+              }}
+            />
+            {searching && <span className="search-spinner">…</span>}
+            {results.length > 0 && (
+              <ul className="search-dropdown">
+                {results.map((r) => (
+                  <li key={r.symbol}>
+                    <button type="button" onClick={() => pickStock(r)}>
+                      <span className="search-name">{r.name}</span>
+                      <span className="search-symbol">{r.symbol}</span>
+                      {r.type && <span className="search-type">{r.type}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <div className="lw-toggles">
             {[
               { key: 'indicators', label: '指标线', on: indicators, set: setIndicators },
@@ -104,8 +184,8 @@ export function LightweightShowcase() {
         <LightweightShowcaseChart
           ref={chartRef}
           data={history}
-          symbol={def.symbol}
-          live
+          symbol={symbol}
+          live={live}
           indicators={indicators}
           markers={markers}
           watermark={watermark}
@@ -119,7 +199,8 @@ export function LightweightShowcase() {
         {/* 数据异常时图表保持显示（空态），把异常提示放在大图右上角 */}
         {error && (
           <div className="lw-stage-error">
-            数据异常：{def.label} {periodLabel} {error}
+            数据异常：{symbolLabel} {periodLabel} {error}
+            {isSourceOrNetworkError(error) && '（若为 WAF 拦截等外部因素，可切换数据源或周期重试）'}
           </div>
         )}
       </section>
@@ -232,16 +313,21 @@ function LightweightDocs() {
       <section className="lw-doc-section">
         <h3>多面板与价格刻度</h3>
         <p>
-          <code>chart.addSeries(定义, 选项, paneIndex)</code> 的第三个参数指定序列落在哪个面板：
-          不传默认新建一个面板；传 0 放回主图；传 1、2… 放进已有的附加面板。
-          本页大图的结构是——主图 K 线（面板 0）、成交量（面板 1）、涨跌幅直方图（面板 2）。
+          本页大图的结构是——主图 K 线（面板 0）、成交量（面板 1）、涨跌幅直方图（面板 2，
+          由「多面板」开关控制显隐）。
         </p>
         <p>
           每个面板可用 <code>IPaneApi</code> 控制：<code>setStretchFactor()</code> 调整纵向
           拉伸权重、<code>setHeight()</code> 固定高度、<code>moveTo()</code> 拖动换位、
-          <code>getSeries()</code> 反查序列。面板内序列的纵向占位由价格刻度控制：
-          <code>{'chart.priceScale(\'\').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })'}</code>
-          让成交量柱只占面板下半部。
+          <code>getSeries()</code> 反查序列。本页主图与成交量面板用
+          <code>setStretchFactor(7)</code> / <code>setStretchFactor(3)</code> 按 7:3 分配高度。
+        </p>
+        <p>
+          面板内序列的纵向占位由价格刻度控制，且<strong>取副图刻度必须经
+          <code>{'chart.panes()[1].priceScale(id)'}</code></strong>——<code>chart.priceScale(id)</code>
+          只查主图。本页成交量面板用
+          <code>{'chart.panes()[1].priceScale(\'vol\').applyOptions({ scaleMargins: { top: 0.5, bottom: 0 } })'}</code>
+          ：top 0.5 让最高量能柱恰好到面板中线（量能柱占下面一半，视觉上不高不矮）。
         </p>
       </section>
 

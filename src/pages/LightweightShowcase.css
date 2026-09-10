@@ -99,10 +99,32 @@
   cursor: pointer;
 }
 
+/* 实时更新 checkbox：与看板顶栏的 .live-toggle 同款青色勾选 */
+.lw-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lw-live input {
+  accent-color: #26a69a;
+}
+
+.lw-live:hover {
+  color: #d7dbe4;
+}
+
 .lw-field select:focus-visible,
 .lw-toggle input:focus-visible + span {
   outline: 2px solid #26a69a;
   outline-offset: 2px;
+}
+
+/* 搜索框与周期等控件左对齐，不做靠右推送（全局 .stock-search 的 margin-left:auto 在此覆盖） */
+.lw-controls .stock-search {
+  margin-left: 0;
 }
 
 .lw-toggles {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { OHLCV, KlinePeriod, StockResult } from '../types/ohlcv';
 import { PERIOD_LABEL, PERIOD_ALL } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
+import { SOURCE_DEFAULTS, HISTORY_LIMITS, DEFAULT_HISTORY_LIMIT, useDebounced } from './controlsShared';
 import { LightweightChart } from '../components/charts/LightweightChart';
 import { KLineChart } from '../components/charts/KLineChart';
 import { HQChart } from '../components/charts/HQChart';
@@ -14,69 +15,6 @@ const LIBRARIES = [
   { id: 'hqchart', name: 'HQChart', Comp: HQChart },
   { id: 'echarts', name: 'ECharts', Comp: EChartsChart },
 ] as const;
-
-/** 各数据源的默认标的面板（选中该源时展示的标的列表 + 默认选中） */
-const SOURCE_DEFAULTS: Record<
-  DataSourceId,
-  { symbol: string; label: string; options: { value: string; label: string }[] }
-> = {
-  binance: {
-    symbol: 'BTCUSDT',
-    label: 'BTCUSDT',
-    options: [
-      { value: 'BTCUSDT', label: 'BTCUSDT' },
-      { value: 'ETHUSDT', label: 'ETHUSDT' },
-      { value: 'BNBUSDT', label: 'BNBUSDT' },
-      { value: 'SOLUSDT', label: 'SOLUSDT' },
-      { value: 'XRPUSDT', label: 'XRPUSDT' },
-    ],
-  },
-  tencent: {
-    symbol: 'sh000001',
-    label: '上证指数',
-    options: [
-      { value: 'sh000001', label: '上证指数' },
-      { value: 'sz399001', label: '深证成指' },
-      { value: 'sh600519', label: '贵州茅台' },
-      { value: 'sz000001', label: '平安银行' },
-      { value: 'sz300750', label: '宁德时代' },
-    ],
-  },
-  eastmoney: {
-    symbol: 'sh000001',
-    label: '上证指数',
-    options: [
-      { value: 'sh000001', label: '上证指数' },
-      { value: 'sz399001', label: '深证成指' },
-      { value: 'sh600519', label: '贵州茅台' },
-      { value: 'sz000001', label: '平安银行' },
-      { value: 'sz300750', label: '宁德时代' },
-    ],
-  },
-  tdx: {
-    symbol: 'sh000001',
-    label: '上证指数',
-    options: [
-      { value: 'sh000001', label: '上证指数' },
-      { value: 'sz399001', label: '深证成指' },
-      { value: 'sh600519', label: '贵州茅台' },
-    ],
-  },
-};
-
-/** 历史 K 线数量档位（顶部工具栏可切换，默认 300） */
-const HISTORY_LIMITS = [100, 300, 500, 1000] as const;
-const DEFAULT_HISTORY_LIMIT = 300;
-
-/** 防抖：等待静默期后才触发搜索请求 */
-function useDebounced<T>(value: T, delay = 300): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebounced(value), delay);
-    return () => window.clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
 
 /**
  * 第 1 页：4 库同源实时 K 线快速对比看板。
@@ -306,12 +244,12 @@ export function Dashboard() {
             )}
           </div>
         </div>
-        {error && <span className="error">数据源错误：{error}</span>}
+        {error && <span className="error">数据源异常：{error}</span>}
       </header>
 
       {error ? (
         <div className="error-panel">
-          无法加载 {symbolLabel}（{symbol}） {period} 数据：{error}
+          无法加载 {symbolLabel}（{symbol}） {PERIOD_LABEL[period]} 数据：{error}
         </div>
       ) : (
         <main className="grid">

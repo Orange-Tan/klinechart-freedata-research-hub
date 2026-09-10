@@ -52,6 +52,31 @@ function toKLineData(d: OHLCV): KLineData {
 const UPDOWN = { up: '#26a69a', down: '#ef5350' } as const;
 
 /**
+ * 主图 K 线 : 副图 VOL 的高度比例（7:3）。klinecharts v10 的 pane 高度是固定
+ * 像素而非比例：布局引擎给每个副图 pane 分配它的 options.height，主图
+ * (candle_pane) 获得全部剩余高度。所以要让比例恒为 7:3，需要反算副图高度：
+ *
+ *   H_vol = round((容器高 − x轴高) ÷ (1 + 7/3))
+ *
+ * x 轴高度是固定像素（由 xAxis.getAutoSize() 决定，见 index.esm.js 的 _layout：
+ * remainingHeight = totalHeight − xAxisHeight）。init 时图表尚未创建，先用
+ * 默认样式下的精确值（26px）估算；容器尺寸变化后，ResizeObserver 会用
+ * getSize('x_axis_pane') 的实测值重新校正。
+ */
+const MAIN_VOL_RATIO = 7 / 3;
+/** 默认样式下 x 轴高度：axisLine 1 + tickLine 3 + tickText 4/6/12 = 26，略高于
+ *  十字光标垂直文字 4+4+2+12 = 22，getAutoSize 取 max 即 26。 */
+const X_AXIS_HEIGHT_DEFAULT = 26;
+
+/** 反算副图 pane 的目标高度：令主图 : 副图 ≈ MAIN_VOL_RATIO */
+function computeVolHeight(containerHeight: number, xAxisHeight: number): number {
+  const contentHeight = Math.max(containerHeight - xAxisHeight, 0);
+  const volHeight = Math.round(contentHeight / (1 + MAIN_VOL_RATIO));
+  // 不低于 pane 默认 minHeight，避免被布局引擎 clamp 到 30 失真
+  return Math.max(volHeight, 30);
+}
+
+/**
  * klinecharts v10 详解页大图适配组件。
  *
  * 与看板 KLineChart 同一套 v10 数据接入（v10 无 applyNewData/updateData 公共
@@ -84,6 +109,8 @@ export const KlinechartsShowcaseChart = forwardRef<
   const loadedKeyRef = useRef('');
   // 副图 VOL 只建一次
   const volCreatedRef = useRef(false);
+  // VOL pane 的 id（createIndicator 后从 getIndicators 取，供 setPaneOptions 反算高度）
+  const volPaneIdRef = useRef<string | null>(null);
   // subscribeBar 注入的增量回调（Store._addData(data,'update')）
   const livePushRef = useRef<((bar: KLineData) => void) | null>(null);
   // 滚轮拦截清理钩子：按库默认方式（不拦截）时为空实现，保留引用以兼容
@@ -112,8 +139,12 @@ export const KlinechartsShowcaseChart = forwardRef<
       // 时间戳统一为 fake-UTC（Binance 本身是 UTC），横轴刻度按 UTC 渲染，
       // 避免非东八区用户机器上时间文字漂移
       timezone: 'UTC',
-      // 副图指标（VOL）的固定 pane 高度：默认 100px 太高，量能柱把主图空间挤占
-      layout: { pane: { height: 60 } },
+      // 主图 : 副图 ≈ 7:3。pane 高度是固定像素，首次按容器高度反算好
+      // 高度，让 VOL pane 在 getBars('init') 里被创建时就用上这个比例；
+      // 容器尺寸变化后由下方 ResizeObserver 通过 setPaneOptions 重新应用。
+      // 注意这里不能用 chart 引用（init 还没返回，处于 TDZ），x 轴高度
+      // 先用默认样式下的精确值 26 估算，图表创建后立即用实测值校正一次。
+      layout: { pane: { height: computeVolHeight(el.clientHeight, X_AXIS_HEIGHT_DEFAULT) } },
       styles: {
         separator: { color: '#1c2333', fill: true },
         grid: {
@@ -141,6 +172,23 @@ export const KlinechartsShowcaseChart = forwardRef<
     if (!chart) return; // init 失败（理论上不会，给 TS 一个收窄）
     chartRef.current = chart;
 
+    // 容器尺寸变化 → 重新应用 7:3 比例。klinecharts v10 内部有自己的
+    // ResizeObserver（resize 时只重算 layout 高度，不改 pane 的 options.height，
+    // 所以主图/副图会按各自上次的像素高度重排而非按比例），这里必须自己监听
+    // 容器高度变化，用 setPaneOptions 把副图高度反算回来，主图自然拿剩余高度。
+    // VOL pane 尚未创建（数据未到）时只更新计算结果，getBars('init') 创建后会读它。
+    let volTargetHeight = 30;
+    const applyVolRatio = () => {
+      const xAxisH = chart.getSize('x_axis_pane')?.height ?? X_AXIS_HEIGHT_DEFAULT;
+      const h = computeVolHeight(el.clientHeight, xAxisH);
+      volTargetHeight = h;
+      const paneId = volPaneIdRef.current;
+      if (paneId) chart.setPaneOptions({ id: paneId, height: h });
+    };
+    applyVolRatio(); // 首次应用（此时 VOL pane 尚未创建，仅计算；创建后 getBars 里会再应用）
+    const ro = new ResizeObserver(() => applyVolRatio());
+    ro.observe(el);
+
     // DataLoader 全权接管数据。setDataLoader 内部会 resetData 并触发一次
     // getBars('init')，所以不能像 setSymbol/setPeriod 那样随 prop 重跑。
     chart.setDataLoader({
@@ -161,6 +209,13 @@ export const KlinechartsShowcaseChart = forwardRef<
             // isStack=false 会先移除同 pane 已有指标，配合防重 ref 无副作用。
             chart.createIndicator('VOL', false);
             volCreatedRef.current = true;
+            // 记录 VOL 所在 pane 的 id，并立即应用最新目标高度（首次数据
+            // 到达前 ResizeObserver 已算出初值；此后容器变化也走它）
+            const ind = chart.getIndicators().find((i) => i.name === 'VOL');
+            volPaneIdRef.current = ind?.paneId ?? null;
+            if (volPaneIdRef.current) {
+              chart.setPaneOptions({ id: volPaneIdRef.current, height: volTargetHeight });
+            }
           }
         } else if (params.type === 'forward') {
           // 向历史翻页：暂无分页源，直接拒绝翻页
@@ -202,9 +257,11 @@ export const KlinechartsShowcaseChart = forwardRef<
       chartInterceptCleanupRef.current?.();
       chartInterceptCleanupRef.current = null;
       livePushRef.current = null;
+      ro.disconnect();
       dispose(chart);
       chartRef.current = null;
       volCreatedRef.current = false;
+      volPaneIdRef.current = null;
     };
   }, []);
 

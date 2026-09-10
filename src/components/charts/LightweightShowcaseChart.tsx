@@ -421,19 +421,20 @@ export const LightweightShowcaseChart = forwardRef<
     chartRef.current?.timeScale().scrollToRealTime();
   }, [symbol, data]);
 
-  // 面板布局：主图 pane 用 setStretchFactor 给更大纵向权重；成交量 pane 保持
-  // 固定高度（setHeight 用法），并设置其价格刻度 scaleMargins（取副图 scale
-  // 须经 chart.panes()[paneIndex].priceScale(id)，chart.priceScale(id) 只查主图）。
+  // 面板布局：主图与成交量 pane 按 7:3 纵向拉伸权重分配（setStretchFactor，
+  // 与 setHeight 固定高度互斥）；量能柱在 pane 内占下半部一半
+  // （scaleMargins top 0.5：既不像默认 0.85 那样压到 15% 显得太矮，也不会
+  // 像 0.2 那样顶满 80% 显得突兀，最高柱约占 pane 一半）。取副图 scale
+  // 须经 chart.panes()[paneIndex].priceScale(id)，chart.priceScale(id) 只查主图。
   // 附加演示面板的显隐由「多面板」开关控制，见 feature 同步 effect（默认折叠）。
   useEffect(() => {
     const chart = chartRef.current;
     const mainPane = mainPaneRef.current;
     const volumePane = volumePaneRef.current;
     if (!chart || !mainPane || !volumePane) return;
-    mainPane.setStretchFactor(4);
-    volumePane.setStretchFactor(1);
-    volumePane.setHeight(140);
-    chart.panes()[1].priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+    mainPane.setStretchFactor(7);
+    volumePane.setStretchFactor(3);
+    chart.panes()[1].priceScale('vol').applyOptions({ scaleMargins: { top: 0.5, bottom: 0 } });
   }, []);
 
   // 功能开关同步：feature 关闭时卸载对应序列/插件，开启时重新填充
@@ -499,20 +500,24 @@ export const LightweightShowcaseChart = forwardRef<
       }
     }
 
-    // 附加面板：开启时填入涨跌幅直方图数据、固定 100px 高 + scaleMargins；
-    // 关闭时清空数据并把面板折叠（setHeight(0) 重新启用拉伸，stretchFactor 0
-    // 不占高度，避免默认状态下底部留一条空面板）
+    // 附加面板：开启时填入涨跌幅直方图数据、按拉伸权重参与分配 + scaleMargins；
+    // 关闭时清空数据并把面板折叠。注意折叠/展开一律用 setStretchFactor——
+    // 不要用 setHeight()：它内部会基于当时的像素高度把所有 pane 的 stretch
+    // factor 全部重写（且带 30px 下限），会破坏下面 7:3 的主图/成交量比例，
+    // 这正是此前量能柱 pane 被压到 ~30px 的根因。
     const extraPane = chart?.panes()[2];
     if (f.extraPanes) {
       extraRef.current?.setData(dataRef.current.map(toExtra));
-      extraPane?.setHeight(100);
       extraPane?.setStretchFactor(1);
       chart?.panes()[2].priceScale('extra').applyOptions({ scaleMargins: { top: 0.6, bottom: 0.1 } });
     } else {
       extraRef.current?.setData([]);
-      extraPane?.setHeight(0);
       extraPane?.setStretchFactor(0);
     }
+    // 每次开关变化后重申主图:成交量 = 7:3（防御性：任何 setHeight 类 API 一旦
+    // 触发 changePanesHeight 就会改写全部 stretch factor，这里兜底恢复比例）
+    mainPaneRef.current?.setStretchFactor(7);
+    volumePaneRef.current?.setStretchFactor(3);
   }, [indicators, markers, watermark, trendLine, priceLine, extraPanes, seriesTypes]);
 
   // 对外暴露：手动重绘（页面可不依赖，留作 API 演示）
