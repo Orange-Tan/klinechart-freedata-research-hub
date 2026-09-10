@@ -179,6 +179,24 @@
   pointer-events: none;
 }
 
+/* 数据异常提示：固定在图表顶部居中（标题栏位置），不遮挡图表主体 */
+.lw-stage-error {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 20px);
+  padding: 5px 10px;
+  background: rgba(247, 118, 142, 0.14);
+  border: 1px solid #f7768e;
+  border-radius: 6px;
+  color: #f7768e;
+  font-size: 12px;
+  line-height: 1.5;
+  z-index: 11;
+  pointer-events: none;
+}
+
 /* ===== 文档区 ===== */
 .lw-docs {
   margin-top: 26px;

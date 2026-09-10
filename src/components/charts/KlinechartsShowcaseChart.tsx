@@ -86,7 +86,8 @@ export const KlinechartsShowcaseChart = forwardRef<
   const volCreatedRef = useRef(false);
   // subscribeBar 注入的增量回调（Store._addData(data,'update')）
   const livePushRef = useRef<((bar: KLineData) => void) | null>(null);
-  // 滚轮拦截（挂在内层 _chartContainer 上）的清理函数
+  // 滚轮拦截清理钩子：按库默认方式（不拦截）时为空实现，保留引用以兼容
+  // 后续切换回拦截方案的代码结构
   const chartInterceptCleanupRef = useRef<(() => void) | null>(null);
   // 页面状态回调：存 ref 供 init effect 订阅用，避免闭包过期
   const onCrosshairRef = useRef(onCrosshair);
@@ -184,37 +185,16 @@ export const KlinechartsShowcaseChart = forwardRef<
       onVisibleRangeRef.current?.(data as VisibleRange | null);
     });
 
-    // 滚轮方向分流（修复触控板在图表区无法滚动页面）：
-    // 实测确认（Playwright 对照实验）：
-    //   1. 库把 wheel listener 绑在内部 `_chartContainer`（.chart-container 的
-    //      第一个子 div，inline `overscroll-behavior:none` + `overflow:hidden`），
-    //      且 _mouseWheelHandler 无条件 preventDefault —— 所以悬停图表时任何
-    //      wheel 都会吞掉浏览器默认滚动，页面滚不动。
-    //   2. 只在 chart-container 上挂 capture 拦截无效（事件仍被内部 div 上的
-    //      非 passive 监听 preventDefault，默认滚动已取消）；但若在内部 div
-    //      capture 阶段 stopImmediatePropagation，库收不到事件就不会 preventDefault，
-    //      页面可恢复滚动（对照：window 捕获层 stop 无效——内部 div 的非 passive
-    //      监听优先于 window）。
-    //   3. 横向滚轮（deltaX 主导）放行给库，保留触控板两指横向滑动平移时间轴。
-    // 实现：init 后直接拿 el.firstElementChild（库的 _chartContainer）挂 capture
-    // 监听；被拦截的纵向滚轮手动滚 .kc-page 滚动容器。mouseleave 时库会移除
-    // 自己的 wheel 监听，我们的 capture 监听挂在内层 div 上不受影响，但只在
-    // 图表存在期间有效（cleanup 移除）。
+    // 滚轮交互：按库默认方式。klinecharts v10 鼠标进入图表时会把 wheel listener
+    // 懒绑定到内部 _chartContainer（非 passive），纵向滚轮 → zoomAtCoordinate
+    // 缩放、横向滚轮 → scroll 平移时间轴。用户选择"按原库默认的方式"，
+    // 不做任何拦截（拦截会导致触控板/滚轮无法缩放图表）。副作用：悬停图表时
+    // 滚轮被图表吞掉、页面无法滚动，这是库默认行为，用户接受。
+    // 保留 cleanup 机制：若未来要改回拦截方案，此处结构仍可用。
     const inner = el.firstElementChild as HTMLElement | null;
     if (inner) {
-      const wheelIntercept = (e: WheelEvent) => {
-        const isVert = Math.abs(e.deltaY) >= Math.abs(e.deltaX);
-        if (isVert) {
-          e.stopImmediatePropagation();
-          // 手动接管：把滚动量加到页面滚动容器上（deltaMode 0=pixel）
-          const scroller = el.closest('.kc-page') as HTMLElement | null;
-          if (scroller) scroller.scrollTop += e.deltaY;
-        }
-        // 横向（deltaX 主导）：放行给库做时间轴平移/缩放
-      };
-      inner.addEventListener('wheel', wheelIntercept, { capture: true, passive: true });
       chartInterceptCleanupRef.current = () => {
-        inner.removeEventListener('wheel', wheelIntercept, { capture: true });
+        // 无拦截监听需要移除（按库默认方式），保留钩子备用
       };
     }
 

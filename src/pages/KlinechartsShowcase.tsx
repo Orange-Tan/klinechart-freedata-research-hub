@@ -282,7 +282,7 @@ export function KlinechartsShowcase() {
   const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
   const periodOptions = supportedPeriodsOf(sourceId);
 
-  const { history, error, source } = useKlineData({
+  const { history, error } = useKlineData({
     sourceId,
     symbol: def.symbol,
     period,
@@ -479,7 +479,6 @@ export function KlinechartsShowcase() {
       <div className="kc-inner">
       <header className="kc-hero">
         <h1>klinecharts 详解</h1>
-        <p className="kc-subtitle">klinecharts 是一个专为金融场景打造的开源 K 线图表库，把常见桌面交易软件里主图、副图、画线、快捷键的能力全部带到了浏览器里。下方大图把所有功能接到控制栏上，可以逐个上手试。</p>
       </header>
 
       {/* 控制栏：像交易软件工具条一样的分组 */}
@@ -595,75 +594,76 @@ export function KlinechartsShowcase() {
         </div>
       </div>
 
-      {error ? (
-        <div className="error-panel">
-          无法加载 {source.label} {def.label} {periodLabelOf(period)} 数据：{error}
-        </div>
-      ) : (
-        <>
-          <section className="kc-stage">
-            <KlinechartsShowcaseChart
-              ref={chartRef}
-              data={history}
-              symbol={def.symbol}
-              period={toPeriod(period)}
-              live
-              onCrosshair={(data) => crosshairCbRef.current(data as unknown)}
-              onVisibleRange={(data) => visibleRangeCbRef.current(data as unknown)}
-            />
-            <span className="sr-only bars-count">{bars} bars</span>
-            {!ready && (
-              <div className="kc-loading">正在加载历史数据…（{bars} / {MIN_BARS} 根）</div>
-            )}
-          </section>
-
-          {/* 状态条：十字光标 OHLC + 可见区间 + 最近操作 */}
-          <div className="kc-statusbar">
-            <div className="kc-status-cell">
-              {crosshairData && crosshairData.timestamp !== null ? (
-                <span className="kc-ohlc">
-                  <span className="kc-ohlc-time">{fmtTime(crosshairData.timestamp)}</span>
-                  <span className="kc-ohlc-item">开 <b>{fmt(crosshairData.open ?? 0)}</b></span>
-                  <span className="kc-ohlc-item">高 <b className="kc-up">{fmt(crosshairData.high ?? 0)}</b></span>
-                  <span className="kc-ohlc-item">低 <b className="kc-down">{fmt(crosshairData.low ?? 0)}</b></span>
-                  <span className="kc-ohlc-item">收 <b>{fmt(crosshairData.close ?? 0)}</b></span>
-                  <span className="kc-ohlc-change">
-                    {crosshairData.open != null &&
-                      crosshairData.close != null &&
-                      (() => {
-                        const pct = crosshairData.open !== 0
-                          ? ((crosshairData.close - crosshairData.open) / crosshairData.open) * 100
-                          : 0;
-                        return (
-                          <b className={crosshairData.close >= crosshairData.open ? 'kc-up' : 'kc-down'}>
-                            {pct >= 0 ? '+' : ''}
-                            {pct.toFixed(2)}%
-                          </b>
-                        );
-                      })()}
-                  </span>
-                </span>
-              ) : (
-                <span className="kc-status-empty">把鼠标移到图表上查看 OHLC</span>
-              )}
-            </div>
-            <div className="kc-status-cell kc-status-range">
-              {visibleRange ? (
-                <span>可见区间 {visibleRange.from} – {visibleRange.to}</span>
-              ) : (
-                <span className="kc-status-empty">可见区间 –</span>
-              )}
-            </div>
-            <div className="kc-status-cell kc-status-msg">
-              {status ? (
-                <span className={`kc-msg kc-msg-${status.kind}`}>{status.message}</span>
-              ) : (
-                <span className="kc-status-empty">就绪</span>
-              )}
-            </div>
+      <section className="kc-stage">
+        <KlinechartsShowcaseChart
+          ref={chartRef}
+          data={history}
+          symbol={def.symbol}
+          period={toPeriod(period)}
+          live
+          onCrosshair={(data) => crosshairCbRef.current(data as unknown)}
+          onVisibleRange={(data) => visibleRangeCbRef.current(data as unknown)}
+        />
+        <span className="sr-only bars-count">{bars} bars</span>
+        {!ready && (
+          <div className="kc-loading">正在加载历史数据…（{bars} / {MIN_BARS} 根）</div>
+        )}
+        {/* 数据异常时图表保持显示（空态），把异常提示放在大图右上角 */}
+        {error && (
+          <div className="kc-stage-error">
+            数据异常：{def.label} {periodLabelOf(period)} {error}
           </div>
-        </>
-      )}
+        )}
+      </section>
+
+      {/* 状态条：十字光标 OHLC + 可见区间 + 最近操作 */}
+      <div className="kc-statusbar">
+        <div className="kc-status-cell">
+          {crosshairData && crosshairData.timestamp !== null ? (
+            <span className="kc-ohlc">
+              <span className="kc-ohlc-time">{fmtTime(crosshairData.timestamp)}</span>
+              <span className="kc-ohlc-item">开 <b>{fmt(crosshairData.open ?? 0)}</b></span>
+              <span className="kc-ohlc-item">高 <b className="kc-up">{fmt(crosshairData.high ?? 0)}</b></span>
+              <span className="kc-ohlc-item">低 <b className="kc-down">{fmt(crosshairData.low ?? 0)}</b></span>
+              <span className="kc-ohlc-item">收 <b>{fmt(crosshairData.close ?? 0)}</b></span>
+              <span className="kc-ohlc-change">
+                {crosshairData.open != null &&
+                  crosshairData.close != null &&
+                  (() => {
+                    const pct = crosshairData.open !== 0
+                      ? ((crosshairData.close - crosshairData.open) / crosshairData.open) * 100
+                      : 0;
+                    return (
+                      <b className={crosshairData.close >= crosshairData.open ? 'kc-up' : 'kc-down'}>
+                        {pct >= 0 ? '+' : ''}
+                        {pct.toFixed(2)}%
+                      </b>
+                    );
+                  })()}
+              </span>
+            </span>
+          ) : (
+            <span className="kc-status-empty">把鼠标移到图表上查看 OHLC</span>
+          )}
+        </div>
+        <div className="kc-status-cell kc-status-range">
+          {visibleRange ? (
+            <span>可见区间 {visibleRange.from} – {visibleRange.to}</span>
+          ) : (
+            <span className="kc-status-empty">可见区间 –</span>
+          )}
+        </div>
+        <div className="kc-status-cell kc-status-msg">
+          {error ? (
+            <span className="kc-msg kc-msg-fail">数据异常：{error}</span>
+          ) : status ? (
+            <span className={`kc-msg kc-msg-${status.kind}`}>{status.message}</span>
+          ) : (
+            <span className="kc-status-empty">就绪</span>
+          )}
+        </div>
+      </div>
+
 
       {/* 下方：库的全量文档 */}
       <KcDocs />

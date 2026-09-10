@@ -41,21 +41,26 @@
   background: #4a5568;
 }
 
-/* 内容列：居中限宽，与数据调研页表格同宽（.report-body max-width: 1240px） */
+/* 内容列：居中限宽，与数据调研页表格同宽（.report-body max-width: 1240px）。
+   padding 18px 32px 与 Lightweight 详解页 .lw-inner 一致，保证两页切换时
+   页首标题的垂直位置与水平缩进都不动 */
 .kc-inner {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 28px 24px 64px;
+  padding: 18px 32px 64px;
 }
 
 /* ===== 页首 ===== */
 .kc-hero {
+  /* 标题与下方控制栏的间距：h1 margin-bottom 6px 与本元素 margin-bottom
+     20px 会发生 margin 折叠（取大值 20px），与 Lightweight 页
+     （flex 容器内 h1 6px + gap 14px = 20px）完全一致 */
   margin-bottom: 20px;
 }
 
 .kc-hero h1 {
-  margin: 0 0 10px;
-  font-size: 30px;
+  margin: 0 0 6px;
+  font-size: 22px; /* 与 Lightweight 详解页 h1 一致 */
   font-weight: 700;
   color: #e8ecf3;
   letter-spacing: 0.2px;
@@ -63,10 +68,10 @@
 
 .kc-subtitle {
   margin: 0;
-  max-width: 76ch; /* 正文行长控制，~80 字符 */
+  max-width: 72ch; /* 与 Lightweight 详解页说明文字一致 */
   line-height: 1.7;
   color: #8b949e;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* ===== 控制栏：交易软件工具条式分组 ===== */
@@ -89,15 +94,17 @@
 }
 
 .kc-field {
+  /* 标题放在选择框左侧（横向排列），与行情软件工具栏一致 */
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
 }
 
 .kc-field-name {
-  font-size: 11px;
+  font-size: 12px; /* 与 Lightweight 详解页字段标题一致 */
   color: #8b949e;
   letter-spacing: 0.4px;
+  white-space: nowrap;
 }
 
 .kc-field select {
@@ -182,9 +189,27 @@
   align-items: center;
   justify-content: center;
   color: #8b949e;
-  font-size: 14px;
+  font-size: 13px;
   background: rgba(11, 14, 23, 0.72);
   z-index: 10;
+  pointer-events: none;
+}
+
+/* 数据异常提示：固定在图表顶部居中（标题栏位置），不遮挡图表主体 */
+.kc-stage-error {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 20px);
+  padding: 5px 10px;
+  background: rgba(247, 118, 142, 0.14);
+  border: 1px solid #f7768e;
+  border-radius: 6px;
+  color: #f7768e;
+  font-size: 12px;
+  line-height: 1.5;
+  z-index: 11;
   pointer-events: none;
 }
 
@@ -271,6 +296,10 @@
   color: #e0af68;
 }
 
+.kc-msg-fail {
+  color: #f7768e;
+}
+
 /* ===== 文档区 ===== */
 .kc-docs {
   margin-top: 44px;
@@ -278,7 +307,7 @@
 
 .kc-docs > h2 {
   margin: 0 0 6px;
-  font-size: 26px;
+  font-size: 19px; /* 与 Lightweight 详解页文档标题一致 */
   font-weight: 700;
   color: #e8ecf3;
 }
@@ -289,7 +318,7 @@
 
 .kc-docs .report-section h3 {
   margin: 0 0 12px;
-  font-size: 18px;
+  font-size: 15px; /* 与 Lightweight 详解页文档分节标题一致 */
   font-weight: 600;
   color: #e8ecf3;
   /* 青色左边线，与报告页 h2 的分节风格同构 */
@@ -299,10 +328,10 @@
 
 .kc-docs p {
   margin: 10px 0;
-  max-width: 80ch; /* 行长控制在 ~80 字符 */
+  max-width: 72ch; /* 行长控制，与 Lightweight 详解页一致 */
   line-height: 1.85;
   color: #d7dbe4;
-  font-size: 14px;
+  font-size: 13px; /* 与 Lightweight 详解页正文一致 */
 }
 
 .kc-docs code {
@@ -310,7 +339,7 @@
   border: 1px solid #2b3245;
   border-radius: 4px;
   padding: 1px 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   color: #7aa2f7;
 }
 
@@ -323,7 +352,7 @@
 .kc-docs .report-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12.5px; /* 与 Lightweight 详解页表格一致 */
   min-width: 640px;
 }
 
@@ -395,12 +424,6 @@
   .kc-group {
     flex-wrap: wrap;
     align-items: center;
-  }
-
-  .kc-field {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
   }
 
   .kc-stage {

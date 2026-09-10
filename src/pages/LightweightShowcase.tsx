@@ -24,7 +24,7 @@ export function LightweightShowcase() {
   const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
   const periodOptions = supportedPeriodsOf(sourceId);
 
-  const { history, error, source } = useKlineData({
+  const { history, error } = useKlineData({
     sourceId,
     symbol: def.symbol,
     period,
@@ -59,7 +59,6 @@ export function LightweightShowcase() {
       <header className="lw-hero">
         <div className="lw-hero-head">
           <h1>Lightweight-Charts 详解</h1>
-          <p>TradingView 出品的轻量级图表库，默认只展示核心 K 线与成交量，勾选上方开关逐项体验指标、标记、水印、画线与多面板能力，下方为全量说明文档。</p>
         </div>
         <div className="lw-controls">
           <label className="lw-field">
@@ -101,29 +100,29 @@ export function LightweightShowcase() {
         </div>
       </header>
 
-      {error ? (
-        <div className="error-panel">
-          无法加载 {source.label} {def.label} {periodLabel} 数据：{error}
-        </div>
-      ) : (
-        <section className="lw-stage">
-          <LightweightShowcaseChart
-            ref={chartRef}
-            data={history}
-            symbol={def.symbol}
-            live
-            indicators={indicators}
-            markers={markers}
-            watermark={watermark}
-            trendLine={trendLine}
-            priceLine={priceLine}
-            extraPanes={extraPanes}
-            seriesTypes={seriesTypes}
-          />
-          <span className="sr-only bars-count">{bars} bars</span>
-          {!ready && <div className="lw-loading">正在加载历史数据…（{bars} / {MIN_BARS} 根）</div>}
-        </section>
-      )}
+      <section className="lw-stage">
+        <LightweightShowcaseChart
+          ref={chartRef}
+          data={history}
+          symbol={def.symbol}
+          live
+          indicators={indicators}
+          markers={markers}
+          watermark={watermark}
+          trendLine={trendLine}
+          priceLine={priceLine}
+          extraPanes={extraPanes}
+          seriesTypes={seriesTypes}
+        />
+        <span className="sr-only bars-count">{bars} bars</span>
+        {!ready && <div className="lw-loading">正在加载历史数据…（{bars} / {MIN_BARS} 根）</div>}
+        {/* 数据异常时图表保持显示（空态），把异常提示放在大图右上角 */}
+        {error && (
+          <div className="lw-stage-error">
+            数据异常：{def.label} {periodLabel} {error}
+          </div>
+        )}
+      </section>
 
       <LightweightDocs />
       </div>
