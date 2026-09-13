@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { OHLCV, KlinePeriod, KlineDataSource } from '../types/ohlcv';
 import { getDataSource, type DataSourceId } from '../data';
 
@@ -21,7 +21,9 @@ export interface UseKlineDataOptions {
  * 可能更早返回的"最新一根未收 K 线"在 historyLoaded 置位前直接丢弃，保证图表
  * 拿到的首批数据永远是完整历史，避免画出来只剩 1 根。
  *
- * 返回的 error 用统一文案（非受支持周期 / 网络失败），页面据此展示错误面板。
+ * 返回的 error 用统一文案（非受支持周期 / 网络失败），页面据此展示错误提示；
+ * retry() 让页面在异常提醒上提供「重试」入口——自增计数加入 effect 依赖，
+ * 触发放弃旧请求、按当前参数重新拉取（源 / 标的 / 周期 / 上限 / 实时开关均不变）。
  */
 export function useKlineData({
   sourceId = 'binance',
@@ -34,6 +36,7 @@ export function useKlineData({
 
   const [history, setHistory] = useState<OHLCV[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,7 +87,11 @@ export function useKlineData({
       cancelled = true;
       unsubscribe?.();
     };
-  }, [source, symbol, period, historyLimit, live]);
+  }, [source, symbol, period, historyLimit, live, retryKey]);
 
-  return { history, error, source };
+  const retry = useCallback(() => {
+    setRetryKey((k) => k + 1);
+  }, []);
+
+  return { history, error, source, retry };
 }

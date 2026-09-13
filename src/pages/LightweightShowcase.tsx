@@ -38,7 +38,7 @@ export function LightweightShowcase() {
   // A 股搜索（仅数据源声明了 searchSymbols 能力时生效；Binance 等源下静默清空）
   const { query, setQuery, results, setResults, searching, reset: resetSearch } = useStockSearch(sourceId);
 
-  const { history, error } = useKlineData({
+  const { history, error, retry } = useKlineData({
     sourceId,
     symbol,
     period,
@@ -192,11 +192,17 @@ export function LightweightShowcase() {
         />
         <span className="sr-only bars-count">{bars} bars</span>
         {!ready && <div className="lw-loading">正在加载历史数据…（{bars} / {MIN_BARS} 根）</div>}
-        {/* 数据异常时图表保持显示（空态），把异常提示放在大图右上角 */}
+        {/* 数据异常时图表保持显示（空态），把异常提示放在大图右上角。
+            文字与「重试」按钮同行（与 kc-stage-error 交互一致）。 */}
         {error && (
           <div className="lw-stage-error">
-            数据异常：{symbolLabel} {periodLabel} {error}
-            {isSourceOrNetworkError(error) && '（若为 WAF 拦截等外部因素，可切换数据源或周期重试）'}
+            <span className="lw-stage-error-msg">
+              数据异常：{symbolLabel} {periodLabel} {error}
+              {isSourceOrNetworkError(error) && '（若为 WAF 拦截等外部因素，可切换数据源或周期重试）'}
+            </span>
+            <button type="button" className="lw-btn" onClick={retry}>
+              重试
+            </button>
           </div>
         )}
       </section>

@@ -38,6 +38,8 @@ export function Dashboard() {
   );
   const [history, setHistory] = useState<OHLCV[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // 重试计数：数据源异常提醒上的「重试」按钮自增它，effect 依赖变化即重新拉取
+  const [retry, setRetry] = useState(0);
   // 当前 (source,symbol,period) 组合的数据是否已成功加载。
   // 当周期不受支持（或仍在加载中/加载失败）时，用它驱动卡片顶部的异常文字提醒。
   const [loaded, setLoaded] = useState(false);
@@ -130,7 +132,7 @@ export function Dashboard() {
       cancelled = true;
       unsubscribe?.();
     };
-  }, [source, symbol, period, live, historyLimit]);
+  }, [source, symbol, period, live, historyLimit, retry]);
 
   return (
     <div className="dashboard">
@@ -214,50 +216,62 @@ export function Dashboard() {
             )}
           </div>
         </div>
-        {error && <span className="error">数据源异常：{error}</span>}
       </header>
 
-      {error ? (
-        <div className="error-panel">
-          无法加载 {symbolLabel}（{symbol}） {PERIOD_LABEL[period]} 数据：{error}
-        </div>
-      ) : (
-        <main className="grid">
-          {LIBRARIES.map(({ id, name, Comp }) => (
-            <section key={id} className="card">
-              <header className="card-header">
-                <h2>{name}</h2>
-                {/* 视口隐藏的 bars 计数：纯渲染进度信号，供自动化测试读取，不占视觉空间 */}
-                <span className="sr-only bars-count">{history.length} bars</span>
-              </header>
-              {/* 异常加载提醒：本数据源不支持该周期时，卡片顶部出现醒目文字 + 一键回退 */}
-              {showWarn && (
-                <div className="chart-warn">
-                  <span>
-                    当前数据源（{source.label}）不支持 {PERIOD_LABEL[period]}（{period}）周期，图表无法加载
-                  </span>
-                  <button
-                    type="button"
-                    className="chart-warn-btn"
-                    onClick={() => setPeriod(supported[0])}
-                  >
-                    切换为 {PERIOD_LABEL[supported[0]]}
-                  </button>
-                </div>
-              )}
-              <div className="chart-wrap">
-                <Comp
-                  data={history}
-                  symbol={symbol}
-                  period={period}
-                  live={live}
-                  resetKey={`${symbol}/${period}/${historyLimit}`}
-                />
+      {/* 数据源异常：灰蒙蒙遮罩（.grid-mask）盖住整个网格、把底下已渲染的图表
+          压暗变灰（图表不清空、保留最后渲染的 K 线）；提示条（.error-panel）
+          浮在遮罩之上（z-index 11 > 10），固定在网格顶部居中、文字与重试按钮
+          同行——交互与两个详页的 stage-error 完全一致。 */}
+      <main className="grid">
+        {error && (
+          <div className="grid-mask" aria-hidden="true">
+            <span>数据源异常，历史数据未能加载</span>
+          </div>
+        )}
+        {error && (
+          <div className="error-panel" role="alert">
+            <span className="error-panel-msg">
+              无法加载 {symbolLabel}（{symbol}） {PERIOD_LABEL[period]} 数据：{error}
+            </span>
+            <button type="button" className="error-retry-btn" onClick={() => setRetry((r) => r + 1)}>
+              重试
+            </button>
+          </div>
+        )}
+        {LIBRARIES.map(({ id, name, Comp }) => (
+          <section key={id} className="card">
+            <header className="card-header">
+              <h2>{name}</h2>
+              {/* 视口隐藏的 bars 计数：纯渲染进度信号，供自动化测试读取，不占视觉空间 */}
+              <span className="sr-only bars-count">{history.length} bars</span>
+            </header>
+            {/* 异常加载提醒：本数据源不支持该周期时，卡片顶部出现醒目文字 + 一键回退 */}
+            {showWarn && (
+              <div className="chart-warn">
+                <span>
+                  当前数据源（{source.label}）不支持 {PERIOD_LABEL[period]}（{period}）周期，图表无法加载
+                </span>
+                <button
+                  type="button"
+                  className="chart-warn-btn"
+                  onClick={() => setPeriod(supported[0])}
+                >
+                  切换为 {PERIOD_LABEL[supported[0]]}
+                </button>
               </div>
-            </section>
-          ))}
-        </main>
-      )}
+            )}
+            <div className="chart-wrap">
+              <Comp
+                data={history}
+                symbol={symbol}
+                period={period}
+                live={live}
+                resetKey={`${symbol}/${period}/${historyLimit}`}
+              />
+            </div>
+          </section>
+        ))}
+      </main>
     </div>
   );
 }

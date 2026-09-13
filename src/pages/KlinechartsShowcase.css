@@ -217,12 +217,19 @@
   pointer-events: none;
 }
 
-/* 数据异常提示：固定在图表顶部居中（标题栏位置），不遮挡图表主体 */
+/* 数据异常提示：固定在图表顶部居中（标题栏位置），不遮挡图表主体。
+   文字与「重试」按钮同行（单行 flex 居中）：文案超宽时以省略号截断，
+   按钮始终与文字同一行、不被挤到下一行。层级高于 .kc-loading 遮罩
+   （z-index 11 > 10），保证在灰蒙蒙遮罩上清晰可见。 */
 .kc-stage-error {
   position: absolute;
   left: 50%;
   top: 8px;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   max-width: calc(100% - 20px);
   padding: 5px 10px;
   background: rgba(247, 118, 142, 0.14);
@@ -232,7 +239,29 @@
   font-size: 12px;
   line-height: 1.5;
   z-index: 11;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.kc-stage-error-msg {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 数据异常提醒上的「重试」按钮：覆盖 kc-btn 基础色，贴合红色异常提示 */
+.kc-stage-error .kc-btn {
+  flex: 0 0 auto;
+  background: #2a1a1e;
+  color: #f7768e;
+  border-color: #f7768e;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+.kc-stage-error .kc-btn:hover {
+  background: #3a2228;
+  color: #f7768e;
+  border-color: #f7768e;
 }
 
 /* ===== 状态条（十字光标 OHLC + 可见区间 + 最近操作） ===== */

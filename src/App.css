@@ -357,18 +357,51 @@ body {
   font-size: 12px;
 }
 
-.error {
-  color: #ef5350;
+.error-panel {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: calc(100% - 20px);
+  padding: 5px 10px;
+  background: rgba(247, 118, 142, 0.14);
+  border: 1px solid #f7768e;
+  border-radius: 6px;
+  color: #f7768e;
   font-size: 12px;
+  line-height: 1.5;
+  z-index: 11;
+  pointer-events: auto;
 }
 
-.error-panel {
-  margin: 24px;
-  padding: 20px;
-  border: 1px solid #5a2d2d;
-  border-radius: 10px;
-  background: #2a1717;
-  color: #f0b4b4;
+.error-panel-msg {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 「重试」按钮（数据源异常提醒共用：error-panel）：
+   覆盖基础红，贴合红色异常提示，与详页 stage-error 的按钮一致 */
+.error-retry-btn {
+  flex: 0 0 auto;
+  background: #2a1a1e;
+  color: #f7768e;
+  border: 1px solid #f7768e;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.error-retry-btn:hover {
+  background: #3a2228;
+  color: #f7768e;
+  border-color: #f7768e;
 }
 
 /* 图表卡片顶部异常提醒条：数据源不支持当前周期、图表无法加载时显示 */
@@ -404,11 +437,30 @@ body {
 .grid {
   flex: 1;
   min-height: 0;
+  position: relative; /* 供 .grid-mask 遮罩定位 */
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-auto-rows: 1fr;
   gap: 12px;
   padding: 12px;
+}
+
+/* 数据源异常遮罩：与 kc-loading / lw-loading 同款"灰蒙蒙"（页面底色
+   rgba(11,14,23) 的 72% 半透明全屏压暗），盖在 4 张图表卡片之上把画面
+   变灰。图表不清空、保留最后渲染的 K 线，罩在下层隐约可见。
+   放在 .grid 内部做绝对定位子元素：grid 容器只对在流内的 .card 分配网格，
+   遮罩脱离文档流铺满整个网格区域（inset:0 相对 .grid 的 position:relative）。 */
+.grid-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b949e;
+  font-size: 13px;
+  background: rgba(11, 14, 23, 0.72);
+  z-index: 10;
+  pointer-events: none;
 }
 
 .card {
