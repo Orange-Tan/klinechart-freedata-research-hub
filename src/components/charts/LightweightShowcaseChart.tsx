@@ -426,10 +426,14 @@ export const LightweightShowcaseChart = forwardRef<
   }, [symbol, data]);
 
   // 面板布局：主图与成交量 pane 按 7:3 纵向拉伸权重分配（setStretchFactor，
-  // 与 setHeight 固定高度互斥）；量能柱在 pane 内占下半部一半
-  // （scaleMargins top 0.5：既不像默认 0.85 那样压到 15% 显得太矮，也不会
-  // 像 0.2 那样顶满 80% 显得突兀，最高柱约占 pane 一半）。取副图 scale
-  // 须经 chart.panes()[paneIndex].priceScale(id)，chart.priceScale(id) 只查主图。
+  // 与 setHeight 固定高度互斥）。成交量 pane 用库默认 scaleMargins
+  // {top: 0.2, bottom: 0.1}：库的轴刻度铺满整个 pane 高度生成
+  // （PriceTickMarkBuilder 取 coordinateToLogicalFunc(0) 为刻度上界），而数据
+  // 范围只映射到去掉上下边距的内部高度，故轴顶标会按 1/内部高度占比 外推。
+  // 之前用 top 0.5 时内部高度只有 pane 一半，轴顶标被外推到 2×数据最大值
+  // （8.05 亿的量能标到 1.6B，上半 pane 全空）；回归默认留白后顶标约 1.4×最大值，
+  // 柱高与轴标都正常。取副图 scale 须经 chart.panes()[paneIndex].priceScale(id)，
+  // chart.priceScale(id) 只查主图。
   // 附加演示面板的显隐由「多面板」开关控制，见 feature 同步 effect（默认折叠）。
   useEffect(() => {
     const chart = chartRef.current;
@@ -438,7 +442,9 @@ export const LightweightShowcaseChart = forwardRef<
     if (!chart || !mainPane || !volumePane) return;
     mainPane.setStretchFactor(7);
     volumePane.setStretchFactor(3);
-    chart.panes()[1].priceScale('right').applyOptions({ scaleMargins: { top: 0.5, bottom: 0 } });
+    // 移除对 volume pane 的 scaleMargins 覆盖，恢复库默认 {top: 0.2, bottom: 0.1}：
+    // 该覆盖会把轴顶标外推到 2×数据最大量能（详见上方注释），恢复默认后顶标
+    // 只比数据上限高约 1.4×，不再出现"最大量能比已加载数据大很多"的虚高。
   }, []);
 
   // 功能开关同步：feature 关闭时卸载对应序列/插件，开启时重新填充
