@@ -1,7 +1,6 @@
 import type { KlinePeriod } from '../types/ohlcv';
 import { PERIOD_ALL } from '../types/ohlcv';
 import { getDataSource, type DataSourceId } from '../data';
-import { SOURCE_DEFAULTS } from './controlsShared';
 
 /**
  * 两个单库详页（LightweightShowcase / KlinechartsShowcase）共用的数据源配置。
@@ -12,7 +11,6 @@ import { SOURCE_DEFAULTS } from './controlsShared';
  * 注意：东方财富在当前网络被 TLS 阻断（见 eastmoney.ts 注释），选择它会显示
  * error-panel 优雅报错；腾讯财经（默认源）与 Binance 可正常直连。
  */
-export const SHOWCASE_SOURCE_DEFAULTS = SOURCE_DEFAULTS;
 
 /**
  * 数据源支持的周期列表（缺省=全部周期；tdx 占位源 supportedPeriods 为空，

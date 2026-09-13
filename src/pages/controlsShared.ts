@@ -9,6 +9,15 @@ export interface SourceDefault {
   options: { value: string; label: string }[];
 }
 
+/** A 股市场默认标的选项（腾讯 / 东方财富共用同一份） */
+const A_SHARE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'sh000001', label: '上证指数' },
+  { value: 'sz399001', label: '深证成指' },
+  { value: 'sh600519', label: '贵州茅台' },
+  { value: 'sz000001', label: '平安银行' },
+  { value: 'sz300750', label: '宁德时代' },
+];
+
 export const SOURCE_DEFAULTS: Record<DataSourceId, SourceDefault> = {
   binance: {
     symbol: 'BTCUSDT',
@@ -24,24 +33,12 @@ export const SOURCE_DEFAULTS: Record<DataSourceId, SourceDefault> = {
   tencent: {
     symbol: 'sh000001',
     label: '上证指数',
-    options: [
-      { value: 'sh000001', label: '上证指数' },
-      { value: 'sz399001', label: '深证成指' },
-      { value: 'sh600519', label: '贵州茅台' },
-      { value: 'sz000001', label: '平安银行' },
-      { value: 'sz300750', label: '宁德时代' },
-    ],
+    options: A_SHARE_OPTIONS,
   },
   eastmoney: {
     symbol: 'sh000001',
     label: '上证指数',
-    options: [
-      { value: 'sh000001', label: '上证指数' },
-      { value: 'sz399001', label: '深证成指' },
-      { value: 'sh600519', label: '贵州茅台' },
-      { value: 'sz000001', label: '平安银行' },
-      { value: 'sz300750', label: '宁德时代' },
-    ],
+    options: A_SHARE_OPTIONS,
   },
   tdx: {
     symbol: 'sh000001',
@@ -65,8 +62,7 @@ export const DEFAULT_HISTORY_LIMIT = 300;
  */
 export function isSourceOrNetworkError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  if (/WAF|501|429|403|CORS|Failed to fetch|network|Network|ECONN/i.test(msg)) return true;
-  return false;
+  return /WAF|501|429|403|CORS|Failed to fetch|network|Network|ECONN/i.test(msg);
 }
 
 /** 防抖：等待静默期后才触发搜索请求 */

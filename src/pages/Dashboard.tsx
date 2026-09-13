@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { OHLCV, KlinePeriod, StockResult } from '../types/ohlcv';
 import { PERIOD_LABEL, PERIOD_ALL } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
-import { SOURCE_DEFAULTS, HISTORY_LIMITS, DEFAULT_HISTORY_LIMIT, useDebounced } from './controlsShared';
+import { SOURCE_DEFAULTS, HISTORY_LIMITS, DEFAULT_HISTORY_LIMIT, useStockSearch } from './controlsShared';
+import { supportedPeriodsOf } from './showcaseShared';
 import { LightweightChart } from '../components/charts/LightweightChart';
 import { KLineChart } from '../components/charts/KLineChart';
 import { HQChart } from '../components/charts/HQChart';
@@ -44,11 +45,9 @@ export function Dashboard() {
   // 只在"用户刚切换过去、数据还没到位"的窗口期显示；数据就绪后自动消失。
   const showWarn = supported.length > 0 && !supported.includes(period) && !loaded;
 
-  // 顶部搜索框状态
-  const [query, setQuery] = useState('');
-  const debouncedQuery = useDebounced(query, 300);
-  const [results, setResults] = useState<StockResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  // 顶部搜索框状态（防抖 + 下拉结果，由共享 hook 管理）
+  const search = useStockSearch(sourceId);
+  const { query, setQuery, results, setResults, searching, reset: resetSearch } = search;
 
   // 切数据源时重置到该源的默认标的，并清掉残留的搜索词/结果；
   // 周期回退到该源的首个支持周期（source.supportedPeriods 或 PERIOD_ALL[0] = 1m）
@@ -57,45 +56,16 @@ export function Dashboard() {
     setSourceId(next);
     setSymbol(d.symbol);
     setSymbolLabel(d.label);
-    setQuery('');
-    setResults([]);
-    const ds = getDataSource(next);
-    const periods = ds.supportedPeriods && ds.supportedPeriods.length > 0 ? ds.supportedPeriods : PERIOD_ALL;
+    resetSearch();
+    const periods = supportedPeriodsOf(next);
     const target = periods.includes(period) ? period : periods[0];
     if (target !== period) setPeriod(target);
   }
 
-  // 搜索（仅支持搜索的源；TDX/无搜索能力时静默跳过）
-  useEffect(() => {
-    const kw = debouncedQuery.trim();
-    if (kw.length < 2 || !source.searchSymbols) {
-      setResults([]);
-      setSearching(false);
-      return;
-    }
-    let cancelled = false;
-    setSearching(true);
-    source
-      .searchSymbols(kw)
-      .then((list) => {
-        if (!cancelled) setResults(list);
-      })
-      .catch(() => {
-        if (!cancelled) setResults([]);
-      })
-      .finally(() => {
-        if (!cancelled) setSearching(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery, source]);
-
   function pickStock(r: StockResult) {
     setSymbol(r.symbol);
     setSymbolLabel(r.name);
-    setQuery('');
-    setResults([]);
+    resetSearch();
   }
 
   // 侧边栏切页会把本组件整体卸载，筛选状态随之丢失（回到默认上证指数/日线）。

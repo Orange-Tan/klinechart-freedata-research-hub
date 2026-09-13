@@ -107,19 +107,12 @@ export const KlinechartsShowcaseChart = forwardRef<
   const symbolRef = useRef(symbol);
   // 已把哪份 (symbol, period) 数据完整喂给过 init（决定增量 or 全量重载）
   const loadedKeyRef = useRef('');
-  // 父级已清空数据（setHistory([])）而图表尚未重载时的待重载标志：清空发生在
-  // 子组件 effect 之后，此时若已把新 key 喂过旧数据，新数据到达时会误走增量；
-  // 置此标志后，数据到达走全量 resetData 而不是把最后一根拼到旧序列上。
-  const pendingReloadRef = useRef(false);
   // 副图 VOL 只建一次
   const volCreatedRef = useRef(false);
   // VOL pane 的 id（createIndicator 后从 getIndicators 取，供 setPaneOptions 反算高度）
   const volPaneIdRef = useRef<string | null>(null);
   // subscribeBar 注入的增量回调（Store._addData(data,'update')）
   const livePushRef = useRef<((bar: KLineData) => void) | null>(null);
-  // 滚轮拦截清理钩子：按库默认方式（不拦截）时为空实现，保留引用以兼容
-  // 后续切换回拦截方案的代码结构
-  const chartInterceptCleanupRef = useRef<(() => void) | null>(null);
   // 页面状态回调：存 ref 供 init effect 订阅用，避免闭包过期
   const onCrosshairRef = useRef(onCrosshair);
   onCrosshairRef.current = onCrosshair;
@@ -244,22 +237,11 @@ export const KlinechartsShowcaseChart = forwardRef<
       onVisibleRangeRef.current?.(data as VisibleRange | null);
     });
 
-    // 滚轮交互：按库默认方式。klinecharts v10 鼠标进入图表时会把 wheel listener
-    // 懒绑定到内部 _chartContainer（非 passive），纵向滚轮 → zoomAtCoordinate
-    // 缩放、横向滚轮 → scroll 平移时间轴。用户选择"按原库默认的方式"，
-    // 不做任何拦截（拦截会导致触控板/滚轮无法缩放图表）。副作用：悬停图表时
-    // 滚轮被图表吞掉、页面无法滚动，这是库默认行为，用户接受。
-    // 保留 cleanup 机制：若未来要改回拦截方案，此处结构仍可用。
-    const inner = el.firstElementChild as HTMLElement | null;
-    if (inner) {
-      chartInterceptCleanupRef.current = () => {
-        // 无拦截监听需要移除（按库默认方式），保留钩子备用
-      };
-    }
+    // 滚轮交互按库默认方式：纵向滚轮缩放、横向滚轮平移时间轴，不做拦截
+    // （拦截会让触控板/滚轮无法缩放）。副作用：悬停图表时滚轮被图表吞掉、
+    // 页面无法滚动，这是库默认行为，用户接受。
 
     return () => {
-      chartInterceptCleanupRef.current?.();
-      chartInterceptCleanupRef.current = null;
       livePushRef.current = null;
       ro.disconnect();
       dispose(chart);
@@ -298,17 +280,18 @@ export const KlinechartsShowcaseChart = forwardRef<
 
     if (data.length === 0) {
       // 父级已清空数据（symbol/period/source/historyLimit/live 切换都会先
-      // setHistory([]) 再重新拉取）——标记"下一次数据到达必须全量重载"。
-      // 不能在这里直接 resetData：清空发生在子组件 effect 之后，此时图表里
-      // 仍是上一份数据，立即重置只会再次读到旧 dataRef。
-      pendingReloadRef.current = true;
+      // setHistory([]) 再重新拉取）——清空 loadedKey，使下一次数据到达时 key
+      // 与 loadedKeyRef 不等、必然走全量 resetData（与 setSymbol/setPeriod 里
+      // 置 '' 的机制一致，幂等无残留）。不能在这里直接 resetData：清空发生在
+      // 子组件 effect 之后，此时图表里仍是上一份数据，立即重置只会再次读到
+      // 旧 dataRef。
+      loadedKeyRef.current = '';
       return;
     }
 
     const key = `${symbol}/${period.type}/${period.span}`;
-    if (key !== loadedKeyRef.current || pendingReloadRef.current) {
+    if (key !== loadedKeyRef.current) {
       // 首帧数据到达 / 交易对或周期已切换 / 父级清空过数据：整批重载
-      pendingReloadRef.current = false;
       chart.resetData();
       loadedKeyRef.current = key;
     } else if (live) {

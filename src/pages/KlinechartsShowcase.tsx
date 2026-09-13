@@ -3,10 +3,11 @@ import { useKlineData } from '../hooks/useKlineData';
 import type { KlinePeriod, StockResult } from '../types/ohlcv';
 import { PERIOD_LABEL } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
-import { SHOWCASE_SOURCE_DEFAULTS, supportedPeriodsOf } from './showcaseShared';
+import { supportedPeriodsOf } from './showcaseShared';
 import {
   DEFAULT_HISTORY_LIMIT,
   HISTORY_LIMITS,
+  SOURCE_DEFAULTS,
   isSourceOrNetworkError,
   useStockSearch,
 } from './controlsShared';
@@ -284,7 +285,7 @@ function periodLabelOf(period: KlinePeriod): string {
  */
 export function KlinechartsShowcase() {
   const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
-  const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
+  const def = SOURCE_DEFAULTS[sourceId];
   const [symbol, setSymbol] = useState<string>(def.symbol);
   const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
   const [period, setPeriod] = useState<KlinePeriod>('1d');
@@ -364,7 +365,7 @@ export function KlinechartsShowcase() {
 
   /** 切换数据源：标的重置为该源默认，搜索清空，周期回退到该源支持的第一个周期 */
   function handleSourceChange(next: DataSourceId) {
-    const d = SHOWCASE_SOURCE_DEFAULTS[next];
+    const d = SOURCE_DEFAULTS[next];
     setSourceId(next);
     setSymbol(d.symbol);
     setSymbolLabel(d.label);
@@ -791,7 +792,7 @@ function KcDocs() {
                 <tr key={k}>
                   <th className="kc-fkey">{k}</th>
                   <td>
-                    {k === '仓库' || k === '官网' || k === 'Pro 版本' ? (
+                    {v.startsWith('http') ? (
                       <a className="kc-external-link" href={v} target="_blank" rel="noreferrer" title={v}>
                         {v}
                       </a>
@@ -1421,6 +1422,3 @@ function KcDocs() {
     </div>
   );
 }
-
-void fmt;
-void periodLabelOf;

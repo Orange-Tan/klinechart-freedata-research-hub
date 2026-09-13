@@ -3,10 +3,11 @@ import { useKlineData } from '../hooks/useKlineData';
 import { PERIOD_LABEL } from '../types/ohlcv';
 import type { KlinePeriod, StockResult } from '../types/ohlcv';
 import { dataSourceList, type DataSourceId } from '../data';
-import { SHOWCASE_SOURCE_DEFAULTS, supportedPeriodsOf } from './showcaseShared';
+import { supportedPeriodsOf } from './showcaseShared';
 import {
   DEFAULT_HISTORY_LIMIT,
   HISTORY_LIMITS,
+  SOURCE_DEFAULTS,
   isSourceOrNetworkError,
   useStockSearch,
 } from './controlsShared';
@@ -25,7 +26,7 @@ const MIN_BARS = 60;
  */
 export function LightweightShowcase() {
   const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
-  const def = SHOWCASE_SOURCE_DEFAULTS[sourceId];
+  const def = SOURCE_DEFAULTS[sourceId];
   const [symbol, setSymbol] = useState<string>(def.symbol);
   const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
   const [period, setPeriod] = useState<KlinePeriod>('1d');
@@ -50,7 +51,7 @@ export function LightweightShowcase() {
 
   // 数据源切换：标的重置为该源默认；搜索清空；周期回退到该源支持的第一个周期
   function handleSourceChange(next: DataSourceId) {
-    const d = SHOWCASE_SOURCE_DEFAULTS[next];
+    const d = SOURCE_DEFAULTS[next];
     setSourceId(next);
     setSymbol(d.symbol);
     setSymbolLabel(d.label);
@@ -64,11 +65,6 @@ export function LightweightShowcase() {
     setSymbol(r.symbol);
     setSymbolLabel(r.name);
     resetSearch();
-  }
-
-  // 周期切换（保持与 handleSourceChange 一致：只改周期，不动标的/搜索）
-  function handlePeriodChange(p: KlinePeriod) {
-    setPeriod(p);
   }
 
   // 大图功能开关（对应下方文档的各功能分节）：默认全关，
@@ -113,7 +109,7 @@ export function LightweightShowcase() {
           </label>
           <label className="lw-field">
             周期
-            <select value={period} onChange={(e) => handlePeriodChange(e.target.value as KlinePeriod)}>
+            <select value={period} onChange={(e) => setPeriod(e.target.value as KlinePeriod)}>
               {periodOptions.map((p) => (
                 <option key={p} value={p}>
                   {PERIOD_LABEL[p]}

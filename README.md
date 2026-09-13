@@ -61,7 +61,7 @@ src/
 │   ├── DataResearch.tsx       # 📡 数据调研页（连通性检测）
 │   ├── LightweightShowcase.tsx / .css  # 📖 轻量库详解页（大图 + 功能总览文档）
 │   ├── KlinechartsShowcase.tsx / .css  # 📖 K线库详解页（大图 + 功能总览文档）
-│   ├── showcaseShared.ts      # 两详页共享逻辑：控件 + 大图 stage + 底部 loading/错误条
+│   ├── showcaseShared.ts      # 两详页共享：supportedPeriodsOf（周期动态过滤）
 │   └── dataResearchData.ts    # 数据源元数据注册表（61 源，页面只展示 40 个可用源）
 ├── components/
 │   ├── Icon.tsx / phosphorIcons.ts  # 全站图标：本地打包 Phosphor 图标（MIT，不依赖在线 API）
@@ -179,7 +179,7 @@ App ── 侧边栏切页（卸载/重挂载）──► Dashboard
 - **单向数据流**：一个数据源 → 4 库，同源同参同数据，横向对比公平
 - **切页卸载/重挂载**：看板回后台即停轮询，切回重新拉取（省请求且数据新鲜）
 - **适配层独立**：每个库一个组件，props 收敛为 `{ data, symbol, period, live }`，差异全封装在组件内部
-- **详页同构**：轻量库 / K线库两详页共用控件与 stage 布局（`showcaseShared.ts`），数据源切换先清空再拉取，配 `pendingReloadRef` 待重载标志防止增量拼错序列
+- **详页同构**：轻量库 / K线库两详页共用控件与 stage 布局，数据源切换先清空再拉取，图表组件在空数据时清空已加载 key、使下一批数据必然走全量重载，防止增量拼错序列
 
 ---
 
