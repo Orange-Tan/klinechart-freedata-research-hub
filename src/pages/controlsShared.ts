@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { StockResult } from '../types/ohlcv';
+import type { KlinePeriod, StockResult } from '../types/ohlcv';
+import { PERIOD_ALL } from '../types/ohlcv';
 import { getDataSource, type DataSourceId } from '../data';
 
 /** 各数据源的默认标的面板（选中该源时展示的标的列表 + 默认选中） */
@@ -18,7 +19,27 @@ const A_SHARE_OPTIONS: { value: string; label: string }[] = [
   { value: 'sz300750', label: '宁德时代' },
 ];
 
+/** 美股/指数默认标的选项（Twelve Data / Yahoo Finance 源共用：A 股用 .SS/.SZ 后缀、指数用 ^ 前缀） */
+const US_OPTIONS: { value: string; label: string }[] = [
+  { value: 'AAPL', label: '苹果 AAPL' },
+  { value: 'MSFT', label: '微软 MSFT' },
+  { value: 'NVDA', label: '英伟达 NVDA' },
+  { value: 'TSLA', label: '特斯拉 TSLA' },
+  { value: '^GSPC', label: '标普500 指数' },
+  { value: '^SSEC', label: '上证指数（.SS）' },
+];
+
 export const SOURCE_DEFAULTS: Record<DataSourceId, SourceDefault> = {
+  tencent: {
+    symbol: 'sh000001',
+    label: '上证指数',
+    options: A_SHARE_OPTIONS,
+  },
+  eastmoney: {
+    symbol: 'sh000001',
+    label: '上证指数',
+    options: A_SHARE_OPTIONS,
+  },
   binance: {
     symbol: 'BTCUSDT',
     label: 'BTCUSDT',
@@ -30,26 +51,25 @@ export const SOURCE_DEFAULTS: Record<DataSourceId, SourceDefault> = {
       { value: 'XRPUSDT', label: 'XRPUSDT' },
     ],
   },
-  tencent: {
-    symbol: 'sh000001',
-    label: '上证指数',
-    options: A_SHARE_OPTIONS,
+  twelvedata: {
+    symbol: 'AAPL',
+    label: '苹果 AAPL',
+    options: US_OPTIONS,
   },
-  eastmoney: {
-    symbol: 'sh000001',
-    label: '上证指数',
-    options: A_SHARE_OPTIONS,
-  },
-  tdx: {
-    symbol: 'sh000001',
-    label: '上证指数',
-    options: [
-      { value: 'sh000001', label: '上证指数' },
-      { value: 'sz399001', label: '深证成指' },
-      { value: 'sh600519', label: '贵州茅台' },
-    ],
+  yahoo: {
+    symbol: 'AAPL',
+    label: '苹果 AAPL',
+    options: US_OPTIONS,
   },
 };
+
+/**
+ * 数据源支持的周期列表（缺省=全部周期，语义与接口注释一致）。
+ * 当前所有源都声明了 supportedPeriods，此兜底仅防未来新增的源漏声明导致周期下拉为空数组。
+ */
+export function supportedPeriodsOf(sourceId: DataSourceId): readonly KlinePeriod[] {
+  return getDataSource(sourceId).supportedPeriods ?? PERIOD_ALL;
+}
 
 /** 历史 K 线数量档位（顶部工具栏可切换，默认 300） */
 export const HISTORY_LIMITS = [100, 300, 500, 1000] as const;

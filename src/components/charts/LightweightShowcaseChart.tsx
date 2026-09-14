@@ -383,7 +383,15 @@ export const LightweightShowcaseChart = forwardRef<
   useEffect(() => {
     const chart = chartRef.current;
     const candle = candleRef.current;
-    if (!chart || !candle || data.length === 0) return;
+    if (!chart || !candle) return;
+    if (data.length === 0) {
+      // 与 LightweightChart 相同的修复：切换标的时父组件先清空数据，这里必须
+      // 同步清掉 lastTimeRef，否则新标的数据到达时会被误判成"同序列增量"，
+      // 新旧标的时间戳一旦重叠（A 股日线均为 UTC 零点），findIndex ≥ 0 走
+      // 增量只补尾段，旧标的 K 线残留屏上。
+      lastTimeRef.current = null;
+      return;
+    }
 
     const lastTime = lastTimeRef.current;
     const reset = () => {

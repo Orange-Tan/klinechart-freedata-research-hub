@@ -106,7 +106,19 @@ export function LightweightChart({ data, symbol, live = true, resetKey }: Lightw
   useEffect(() => {
     const candle = candleRef.current;
     const volume = volumeRef.current;
-    if (!candle || !volume || data.length === 0) return;
+    if (!candle || !volume) return;
+    if (data.length === 0) {
+      // symbol/period 切换时父组件先 setHistory([]) 清空数据。这里不能提前
+      // return 留下旧标的的增量状态：React 子 effect 先于父 effect 执行，
+      // 旧数据 + 新 resetKey 会先走一次全量分支把 key 提前消费掉；随后空数据
+      // 若不清 lastTimeRef/lastResetKeyRef，新标的数据到达时会被误判成"同序列
+      // 增量"，新旧标的时间戳一旦重叠（如两只 A 股日线，都是 UTC 零点），
+      // findIndex ≥ 0 走增量只补尾段，旧标的数百根 bar 残留屏上。
+      // 对齐 KLineChart 清 loadedKey 的做法：清掉增量状态，等新数据走全量重设。
+      lastTimeRef.current = null;
+      lastResetKeyRef.current = null;
+      return;
+    }
 
     if (!live) {
       candle.setData(data.map(toCandle));

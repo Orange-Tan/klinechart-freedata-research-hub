@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { OHLCV, KlinePeriod, StockResult } from '../types/ohlcv';
 import { PERIOD_LABEL, PERIOD_ALL } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
-import { SOURCE_DEFAULTS, HISTORY_LIMITS, DEFAULT_HISTORY_LIMIT, useStockSearch } from './controlsShared';
-import { supportedPeriodsOf } from './showcaseShared';
+import { SOURCE_DEFAULTS, HISTORY_LIMITS, useStockSearch, supportedPeriodsOf } from './controlsShared';
+import type { ChartViewState } from '../state/chartView';
 import { LightweightChart } from '../components/charts/LightweightChart';
 import { KLineChart } from '../components/charts/KLineChart';
 import { HQChart } from '../components/charts/HQChart';
@@ -20,15 +20,18 @@ const LIBRARIES = [
 /**
  * 第 1 页：4 库同源实时 K 线快速对比看板。
  * 数据流单向：数据源 → 本组件统一拉取 → 4 个图表适配组件各用自己的 API 消费。
+ *
+ * 筛选状态（数据源/标的/周期/实时/根数）由 App 全局持有并注入：
+ * 切页卸载再切回时从 localStorage 恢复，不退回默认腾讯财经。
  */
-export function Dashboard() {
-  const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
+export function Dashboard({ chartView, onChartViewChange }: {
+  chartView: ChartViewState;
+  onChartViewChange: (v: ChartViewState) => void;
+}) {
+  const { sourceId, symbol, symbolLabel, period, live, historyLimit } = chartView;
   const def = SOURCE_DEFAULTS[sourceId];
-  const [symbol, setSymbol] = useState<string>(def.symbol);
-  const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
-  const [period, setPeriod] = useState<KlinePeriod>('1d');
-  const [live, setLive] = useState(true);
-  const [historyLimit, setHistoryLimit] = useState<number>(DEFAULT_HISTORY_LIMIT);
+  // 单项变更 = 读当前值改一个字段后整体上报（写回 App 状态与 localStorage）
+  const patch = (p: Partial<ChartViewState>) => onChartViewChange({ ...chartView, ...p });
 
   const source = useMemo(() => getDataSource(sourceId), [sourceId]);
   // 当前数据源支持的周期（不声明则默认全部支持）
@@ -55,25 +58,19 @@ export function Dashboard() {
   // 周期回退到该源的首个支持周期（source.supportedPeriods 或 PERIOD_ALL[0] = 1m）
   function handleSourceChange(next: DataSourceId) {
     const d = SOURCE_DEFAULTS[next];
-    setSourceId(next);
-    setSymbol(d.symbol);
-    setSymbolLabel(d.label);
-    resetSearch();
     const periods = supportedPeriodsOf(next);
     const target = periods.includes(period) ? period : periods[0];
-    if (target !== period) setPeriod(target);
+    patch({ sourceId: next, symbol: d.symbol, symbolLabel: d.label, period: target });
+    resetSearch();
   }
 
   function pickStock(r: StockResult) {
-    setSymbol(r.symbol);
-    setSymbolLabel(r.name);
+    patch({ symbol: r.symbol, symbolLabel: r.name });
     resetSearch();
   }
 
-  // 侧边栏切页会把本组件整体卸载，筛选状态随之丢失（回到默认上证指数/日线）。
-  // 这属于已知取舍：切页即停止轮询、切回重新拉取，换来的数据保鲜
-  // 比保留筛选更符合"快速对比看板"的定位；若将来需要持久化，再考虑把状态
-  // 提升到 App 或 localStorage。
+  // 侧边栏切页会把本组件整体卸载，但筛选状态由 App 全局持有（localStorage 持久化），
+  // 切回时自动恢复，不再退回默认腾讯财经；切页停止轮询、切回重新拉取的数据保鲜不变。
 
   // 历史数据 + 订阅：source/symbol/period 任一变化都重建
   useEffect(() => {
@@ -151,7 +148,7 @@ export function Dashboard() {
           </label>
           <label>
             标的
-            <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+            <select value={symbol} onChange={(e) => patch({ symbol: e.target.value, symbolLabel: def.options.find((o) => o.value === e.target.value)?.label ?? symbol })}>
               {def.options.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -163,7 +160,7 @@ export function Dashboard() {
             周期
             <select
               value={supported.includes(period) ? period : ''}
-              onChange={(e) => setPeriod(e.target.value as KlinePeriod)}
+              onChange={(e) => patch({ period: e.target.value as KlinePeriod })}
             >
               {supported.map((p) => (
                 <option key={p} value={p}>
@@ -173,14 +170,14 @@ export function Dashboard() {
             </select>
           </label>
           <label className="live-toggle">
-            <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
+            <input type="checkbox" checked={live} onChange={(e) => patch({ live: e.target.checked })} />
             实时更新
           </label>
           <label>
             历史 K 线
             <select
               value={historyLimit}
-              onChange={(e) => setHistoryLimit(Number(e.target.value))}
+              onChange={(e) => patch({ historyLimit: Number(e.target.value) })}
             >
               {HISTORY_LIMITS.map((n) => (
                 <option key={n} value={n}>
@@ -254,7 +251,7 @@ export function Dashboard() {
                 <button
                   type="button"
                   className="chart-warn-btn"
-                  onClick={() => setPeriod(supported[0])}
+                  onClick={() => patch({ period: supported[0] })}
                 >
                   切换为 {PERIOD_LABEL[supported[0]]}
                 </button>

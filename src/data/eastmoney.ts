@@ -13,9 +13,11 @@ const EASTMONEY_PERIODS: readonly KlinePeriod[] = ['1m', '5m', '15m', '1h', '1d'
  *
  * 实时：`push2.eastmoney.com/api/qt/stock/get`（secid + fields=f43,f44,f45,f46,f47,f48,f60,…）
  *
- * ⚠️ 实测限制（2026-09）：push2his/push2 在当前网络被 TLS 层阻断
- * （SNI 篡改 / bad decrypt），fetch 返回空。实现保留完整功能，UI 通过
- * error-panel 优雅报错；若换网络/加代理后可直连即可用。
+ * ⚠️ 实测限制（2026-09）：push2his 在当前网络被 DNS 解析到 trafficmanager.cn
+ * 的「坏 IP 池」，这些源站对 kline 请求直接 reset（Empty reply），浏览器原生 fetch
+ * 拿不到数据。dev 环境通过 Vite dev server 的 /push2his 代理直连「好池」IP
+ * （120.79.191.232 / 119.3.232.150 / 120.76.218.228，显式 SNI + Host = push2his）
+ * 绕开坏池取数（详见 vite.config.ts）；生产构建无代理，会如实失败。
  *
  * 时区：与腾讯源一致，fake-UTC 解析（详见 tencent.ts 顶部注释）。
  */
@@ -55,7 +57,10 @@ export class EastMoneyDataSource implements KlineDataSource {
       fields2: 'f51,f52,f53,f54,f55,f56,f57,f58',
     });
     const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?${params}`;
-    const res = await fetch(url);
+    // dev 环境：DNS 坏池问题由 Vite dev server 的 /push2his 代理绕开（见 vite.config.ts），
+    // 直接走同源相对路径；生产构建保持源站直连（会如实失败，见文件顶部注释）。
+    const target = import.meta.env.DEV ? `/push2his${new URL(url).pathname}?${params}` : url;
+    const res = await fetch(target);
     if (!res.ok) {
       throw new Error(`东财 API ${res.status}: ${await res.text()}`);
     }
@@ -81,8 +86,8 @@ export class EastMoneyDataSource implements KlineDataSource {
   }
 
   /**
-   * 订阅实时 K 线。东财实时接口在当前网络同样被 TLS 阻断，
-   * 因此轮询退化为拉最新 1 根历史——能连时正常，连不上时静默忽略。
+   * 订阅实时 K 线。东财实时接口在当前网络同样受 DNS 坏池影响（fetch 失败），
+   * 因此轮询退化为拉最新 1 根历史——dev 下经 /push2his 代理可取数，失败时静默忽略。
    */
   subscribe(symbol: string, period: KlinePeriod, onUpdate: (bar: OHLCV) => void): () => void {
     const INTERVAL_MS = 2_000;
@@ -102,7 +107,7 @@ export class EastMoneyDataSource implements KlineDataSource {
           onUpdate(latest);
         }
       } catch {
-        // 轮询失败静默忽略（当前网络东财大概率连不上，避免刷屏报错）
+        // 轮询失败静默忽略（DNS 坏池/网络波动时避免刷屏报错）
       }
     };
 

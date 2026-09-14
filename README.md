@@ -7,7 +7,7 @@
 同一份**实时 K 线数据**，同源喂给 **4 个开源图表库**横向评测渲染与交互差异；
 并内置 **5 大市场免费数据源调研** 与 **一键连通性检测**。
 
-<sub>Vite + React 19 + TypeScript · 腾讯/东方财富/币安多源实时行情 · Playwright 冒烟测试</sub>
+<sub>Vite + React 19 + TypeScript · 腾讯/东方财富/币安/Twelve Data/Yahoo 多源实时行情 · Playwright 冒烟测试</sub>
 
 </div>
 
@@ -40,13 +40,21 @@
 
 ![多图对比看板](docs/img/dashboard-compare.png)
 
+**📋 图表调研 —— 四大开源图表库选型调研报告**
+
+![图表调研页](docs/img/report-page.png)
+
 **📡 数据调研 —— 五大市场免费数据源 + 连通性检测**
 
 ![数据调研页](docs/img/data-research.png)
 
-**📖 单库详解 —— 全功能大图 + 表格化文档（轻量库 / K线库同构）**
+**📖 轻量库详解 —— 全功能大图 + 表格化文档**
 
-![轻量库详解页](docs/img/showcase-pages.png)
+![轻量库详解页](docs/img/lightweight-page.png)
+
+**📖 K线库详解 —— 全功能大图 + 表格化文档（与轻量库同构）**
+
+![K线库详解页](docs/img/klinecharts-page.png)
 
 ---
 
@@ -61,7 +69,7 @@ src/
 │   ├── DataResearch.tsx       # 📡 数据调研页（连通性检测）
 │   ├── LightweightShowcase.tsx / .css  # 📖 轻量库详解页（大图 + 功能总览文档）
 │   ├── KlinechartsShowcase.tsx / .css  # 📖 K线库详解页（大图 + 功能总览文档）
-│   ├── showcaseShared.ts      # 两详页共享：supportedPeriodsOf（周期动态过滤）
+│   ├── controlsShared.ts      # 三页共享：默认标的/周期过滤（supportedPeriodsOf）/搜索
 │   └── dataResearchData.ts    # 数据源元数据注册表（61 源，页面只展示 40 个可用源）
 ├── components/
 │   ├── Icon.tsx / phosphorIcons.ts  # 全站图标：本地打包 Phosphor 图标（MIT，不依赖在线 API）
@@ -69,8 +77,9 @@ src/
 ├── data/
 │   ├── tencent.ts            # 数据源适配器：腾讯财经（REST + 轮询 + 竞态守卫）
 │   ├── eastmoney.ts          # 东方财富数据源适配器
+│   ├── yahoo.ts              # Yahoo Finance 数据源适配器（需 /yh 代理）
+│   ├── twelvedata.ts         # Twelve Data 数据源适配器（免费 key，直连）
 │   ├── binance.ts            # 币安数据源适配器
-│   ├── tdx.ts                # 通达信数据源适配器（占位，浏览器端不可用）
 │   ├── aShareSearch.ts       # A 股搜索：东财 suggest JSONP + 腾讯 smartbox 双源兜底
 │   ├── connectivity.ts       # 连通性检测：fetch / JSONP / 服务端库判定
 │   └── index.ts              # 数据源注册表
@@ -171,7 +180,7 @@ npx playwright test  # 终端 2：冒烟测试
 
 ```
 App ── 侧边栏切页（卸载/重挂载）──► Dashboard
- ├─ useFetchKlines effect ──► 数据源 REST 拉历史 + 2s 轮询（腾讯/东财/币安可切换）
+ ├─ useFetchKlines effect ──► 数据源 REST 拉历史 + 2s 轮询（腾讯/东财/币安/Twelve Data/Yahoo 可切换）
  ├─ setHistory(bars) ──► 每个 <Comp> 收到 data={history}
  └─ LIBRARIES 注册表（symbol/period/live 同源同步切给 4 库）
 ```

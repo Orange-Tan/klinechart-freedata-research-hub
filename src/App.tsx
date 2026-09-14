@@ -6,6 +6,13 @@ import { DataResearch } from './pages/DataResearch';
 import { LightweightShowcase } from './pages/LightweightShowcase';
 import { KlinechartsShowcase } from './pages/KlinechartsShowcase';
 import { Icon, iconOf } from './components/Icon';
+import {
+  loadChartViewState,
+  resolvePeriod,
+  resolveSymbol,
+  saveChartViewState,
+  type ChartViewState,
+} from './state/chartView';
 
 type PageId = 'dashboard' | 'report' | 'data' | 'lightweight' | 'klinecharts';
 
@@ -27,7 +34,37 @@ const PAGES = [
 /** 展开/折叠切换图标：按当前状态取对应图标 */
 const SIDEBAR_TOGGLE_ICON = (open: boolean) => (open ? iconOf('侧栏收起') : iconOf('侧栏展开'));
 
+/** 各页首次访问（无存档）时的默认筛选状态 */
+const DEFAULT_VIEW: ChartViewState = {
+  sourceId: 'tencent',
+  symbol: 'sh000001',
+  symbolLabel: '上证指数',
+  period: '1d',
+  live: true,
+  historyLimit: 300,
+};
+
 export default function App() {
+  // 看板/两个详页共用的筛选状态（数据源/标的/周期/实时/根数），全局持有：
+  // 组件卸载（切页）再挂载时从 localStorage 恢复，不退回默认腾讯财经。
+  const [chartView, setChartView] = useState<ChartViewState>(() => {
+    const loaded = loadChartViewState();
+    if (!loaded) return DEFAULT_VIEW;
+    // 仅在恢复存档时归一化：标的/周期若在存档后已不再可用（如该源删过选项/周期），
+    // 回退到该源默认，避免把非法值下传给页面导致 select 失配或拉取失败。
+    // 会话中不做响应式钳制，否则用户/测试选中的值会被悄悄改回去。
+    const { symbol, symbolLabel } = resolveSymbol(loaded);
+    const period = resolvePeriod(loaded);
+    if (symbol === loaded.symbol && symbolLabel === loaded.symbolLabel && period === loaded.period) {
+      return loaded;
+    }
+    return { ...loaded, symbol, symbolLabel, period };
+  });
+  // 选项变更时同步写 localStorage（值随渲染一并更新，切页后即可恢复）
+  useEffect(() => {
+    saveChartViewState(chartView);
+  }, [chartView]);
+
   const [page, setPage] = useState<PageId>('dashboard');
   // 侧边栏展开/折叠（默认折叠；折叠后只显示图标，给图表区让出更多宽度）
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -94,19 +131,19 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot">数据源：腾讯财经 / 东方财富 / 通达信 / Binance</div>
+        <div className="sidebar-foot">数据源：腾讯财经 / 东方财富 / Binance / Twelve Data / Yahoo Finance</div>
       </aside>
       <div className="main">
         {page === 'dashboard' ? (
-          <Dashboard />
+          <Dashboard chartView={chartView} onChartViewChange={setChartView} />
         ) : page === 'report' ? (
           <ResearchReport />
         ) : page === 'data' ? (
           <DataResearch />
         ) : page === 'lightweight' ? (
-          <LightweightShowcase />
+          <LightweightShowcase chartView={chartView} onChartViewChange={setChartView} />
         ) : (
-          <KlinechartsShowcase />
+          <KlinechartsShowcase chartView={chartView} onChartViewChange={setChartView} />
         )}
       </div>
       {/* 悬浮提示：portal 到 body，fixed 定位 + 99999，盖过右侧图表 canvas */}

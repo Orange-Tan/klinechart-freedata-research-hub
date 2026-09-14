@@ -3,12 +3,11 @@ import { useKlineData } from '../hooks/useKlineData';
 import type { KlinePeriod, StockResult } from '../types/ohlcv';
 import { PERIOD_LABEL } from '../types/ohlcv';
 import { dataSourceList, getDataSource, type DataSourceId } from '../data';
-import { supportedPeriodsOf } from './showcaseShared';
 import {
-  DEFAULT_HISTORY_LIMIT,
   HISTORY_LIMITS,
   SOURCE_DEFAULTS,
   isSourceOrNetworkError,
+  supportedPeriodsOf,
   useStockSearch,
 } from './controlsShared';
 import {
@@ -17,6 +16,7 @@ import {
   type KlinechartsShowcaseChartRef,
 } from '../components/charts/KlinechartsShowcaseChart';
 import type { CandleType } from 'klinecharts';
+import type { ChartViewState } from '../state/chartView';
 import './KlinechartsShowcase.css';
 
 /** 页首大图需要 ≥ MIN_BARS 根历史才敢展示全量功能（指标/画线不空洞） */
@@ -283,14 +283,14 @@ function periodLabelOf(period: KlinePeriod): string {
  * 自定义注册 / 截图 / 导航 / K 线样式 / 十字光标状态条），文档区按主题分节
  * 讲解并给出与 lightweight-charts 的对比结论。
  */
-export function KlinechartsShowcase() {
-  const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
+export function KlinechartsShowcase({ chartView, onChartViewChange }: {
+  chartView: ChartViewState;
+  onChartViewChange: (v: ChartViewState) => void;
+}) {
+  const { sourceId, symbol, symbolLabel, period, live, historyLimit } = chartView;
   const def = SOURCE_DEFAULTS[sourceId];
-  const [symbol, setSymbol] = useState<string>(def.symbol);
-  const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
-  const [period, setPeriod] = useState<KlinePeriod>('1d');
-  const [live, setLive] = useState(true);
-  const [historyLimit, setHistoryLimit] = useState<number>(DEFAULT_HISTORY_LIMIT);
+  // 单项变更 = 读当前值改一个字段后整体上报（写回 App 状态与 localStorage）
+  const patch = (p: Partial<ChartViewState>) => onChartViewChange({ ...chartView, ...p });
   const chartRef = useRef<KlinechartsShowcaseChartRef>(null);
   const periodOptions = supportedPeriodsOf(sourceId);
 
@@ -366,20 +366,16 @@ export function KlinechartsShowcase() {
   /** 切换数据源：标的重置为该源默认，搜索清空，周期回退到该源支持的第一个周期 */
   function handleSourceChange(next: DataSourceId) {
     const d = SOURCE_DEFAULTS[next];
-    setSourceId(next);
-    setSymbol(d.symbol);
-    setSymbolLabel(d.label);
-    resetSearch();
     const options = supportedPeriodsOf(next);
-    if (!options.includes(period)) setPeriod(options[0]);
+    patch({ sourceId: next, symbol: d.symbol, symbolLabel: d.label, period: options.includes(period) ? period : options[0] });
+    resetSearch();
     setCrosshairData(null);
     pushStatus(`数据源已切换为 ${getDataSource(next).label}`, 'info');
   }
 
   /** 从搜索下拉选中标的：切到该标的，清空搜索框与下拉结果 */
   function pickStock(r: StockResult) {
-    setSymbol(r.symbol);
-    setSymbolLabel(r.name);
+    patch({ symbol: r.symbol, symbolLabel: r.name });
     resetSearch();
     setCrosshairData(null);
     pushStatus(`已切换标的为 ${r.name}（${r.symbol}）`, 'info');
@@ -498,7 +494,7 @@ export function KlinechartsShowcase() {
 
   // 周期切换
   const changePeriod = (p: KlinePeriod) => {
-    setPeriod(p);
+    patch({ period: p });
     setCrosshairData(null);
     pushStatus(`周期已切换为${PERIOD_LABEL[p]}`, 'info');
   };
@@ -528,7 +524,7 @@ export function KlinechartsShowcase() {
         <div className="kc-group">
           <label className="kc-field">
             <span className="kc-field-name">标的</span>
-            <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+            <select value={symbol} onChange={(e) => patch({ symbol: e.target.value, symbolLabel: def.options.find((o) => o.value === e.target.value)?.label ?? symbol })}>
               {def.options.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -553,13 +549,13 @@ export function KlinechartsShowcase() {
 
         <label className="kc-field kc-live">
           <span className="kc-field-name">实时更新</span>
-          <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
+          <input type="checkbox" checked={live} onChange={(e) => patch({ live: e.target.checked })} />
         </label>
 
         <div className="kc-group">
           <label className="kc-field">
             <span className="kc-field-name">历史K线</span>
-            <select value={historyLimit} onChange={(e) => setHistoryLimit(Number(e.target.value))}>
+            <select value={historyLimit} onChange={(e) => patch({ historyLimit: Number(e.target.value) })}>
               {HISTORY_LIMITS.map((n) => (
                 <option key={n} value={n}>
                   {n} 根

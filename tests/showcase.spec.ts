@@ -93,12 +93,13 @@ test('两个单库详页渲染：大图 + 全量文档 + 功能开关', async ({
   await page.locator('.sidebar-item', { hasText: 'K线库详情' }).click();
   await expect(page.locator('h1', { hasText: 'klinecharts 详解' })).toBeVisible();
 
-  // 看板同款控件：默认腾讯源 → 上证指数，实时更新勾选，历史K线默认 300
+  // 筛选状态全局保持：上一段结束时已是「腾讯源 + 平安银行（sz000001）+ 历史K线 100 根」，
+  // 切到 kc 页应原样带过来（不再是默认上证指数 / 300 根）。
   const kcControls = page.locator('.kc-controls');
   await expect(kcControls.locator('label', { hasText: '数据源' }).locator('select')).toHaveValue('tencent');
-  await expect(kcControls.locator('label', { hasText: '标的' }).locator('select')).toHaveValue('sh000001');
+  await expect(kcControls.locator('label', { hasText: '标的' }).locator('select')).toHaveValue('sz000001');
   await expect(kcControls.locator('.kc-live input')).toBeChecked();
-  await expect(kcControls.locator('label', { hasText: '历史K线' }).locator('select')).toHaveValue('300');
+  await expect(kcControls.locator('label', { hasText: '历史K线' }).locator('select')).toHaveValue('100');
 
   // 同上：腾讯源当前被 WAF 拦截，切 Binance 让图表渲染
   await kcControls.locator('label', { hasText: '数据源' }).locator('select').selectOption('binance');

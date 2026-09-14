@@ -1,18 +1,21 @@
 import { BinanceDataSource } from './binance';
 import { TencentDataSource } from './tencent';
 import { EastMoneyDataSource } from './eastmoney';
-import { TdxDataSource } from './tdx';
+import { TwelveDataDataSource } from './twelvedata';
+import { YahooDataSource } from './yahoo';
 import type { KlineDataSource } from '../types/ohlcv';
 
 /**
  * 数据源注册表 —— 新增数据源在这里注册，UI 即可选择。
- * 默认数据源为腾讯财经（见 Dashboard 的 SOURCE_DEFAULTS）。
+ * 注意：对象键顺序 = UI 下拉框顺序（dataSourceList = Object.values(dataSources)）。
+ * 默认数据源由各页面组件内的 useState<DataSourceId>('tencent') 硬编码，与此处无关。
  */
 export const dataSources = {
-  binance: new BinanceDataSource(),
   tencent: new TencentDataSource(),
   eastmoney: new EastMoneyDataSource(),
-  tdx: new TdxDataSource(),
+  binance: new BinanceDataSource(),
+  twelvedata: new TwelveDataDataSource(),
+  yahoo: new YahooDataSource(),
 } as const;
 
 export type DataSourceId = keyof typeof dataSources;

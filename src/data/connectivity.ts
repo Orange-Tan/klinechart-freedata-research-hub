@@ -29,6 +29,7 @@ function resolveCheckUrl(src: DataSourceInfo): string {
     'api.kraken.com': '/kr',
     'api.fund.eastmoney.com': '/ttjj',
     'www.shfe.com.cn': '/shfe',
+    'push2his.eastmoney.com': '/push2his',
   };
   const host = proxyHosts[new URL(url).hostname];
   if (!host) return url;

@@ -3,14 +3,14 @@ import { useKlineData } from '../hooks/useKlineData';
 import { PERIOD_LABEL } from '../types/ohlcv';
 import type { KlinePeriod, StockResult } from '../types/ohlcv';
 import { dataSourceList, type DataSourceId } from '../data';
-import { supportedPeriodsOf } from './showcaseShared';
 import {
-  DEFAULT_HISTORY_LIMIT,
   HISTORY_LIMITS,
   SOURCE_DEFAULTS,
   isSourceOrNetworkError,
+  supportedPeriodsOf,
   useStockSearch,
 } from './controlsShared';
+import type { ChartViewState } from '../state/chartView';
 import {
   LightweightShowcaseChart,
   type LightweightShowcaseChartRef,
@@ -24,14 +24,14 @@ const MIN_BARS = 60;
  * Lightweight-Charts 单库详解页：页首是功能全开的大型独立 K 线图，
  * 页下是对这个库所有功能的详细中文说明。
  */
-export function LightweightShowcase() {
-  const [sourceId, setSourceId] = useState<DataSourceId>('tencent');
+export function LightweightShowcase({ chartView, onChartViewChange }: {
+  chartView: ChartViewState;
+  onChartViewChange: (v: ChartViewState) => void;
+}) {
+  const { sourceId, symbol, symbolLabel, period, live, historyLimit } = chartView;
   const def = SOURCE_DEFAULTS[sourceId];
-  const [symbol, setSymbol] = useState<string>(def.symbol);
-  const [symbolLabel, setSymbolLabel] = useState<string>(def.label);
-  const [period, setPeriod] = useState<KlinePeriod>('1d');
-  const [live, setLive] = useState(true);
-  const [historyLimit, setHistoryLimit] = useState<number>(DEFAULT_HISTORY_LIMIT);
+  // 单项变更 = 读当前值改一个字段后整体上报（写回 App 状态与 localStorage）
+  const patch = (p: Partial<ChartViewState>) => onChartViewChange({ ...chartView, ...p });
   const chartRef = useRef<LightweightShowcaseChartRef>(null);
   const periodOptions = supportedPeriodsOf(sourceId);
 
@@ -52,18 +52,19 @@ export function LightweightShowcase() {
   // 数据源切换：标的重置为该源默认；搜索清空；周期回退到该源支持的第一个周期
   function handleSourceChange(next: DataSourceId) {
     const d = SOURCE_DEFAULTS[next];
-    setSourceId(next);
-    setSymbol(d.symbol);
-    setSymbolLabel(d.label);
-    resetSearch();
     const options = supportedPeriodsOf(next);
-    if (!options.includes(period)) setPeriod(options[0]);
+    patch({
+      sourceId: next,
+      symbol: d.symbol,
+      symbolLabel: d.label,
+      period: options.includes(period) ? period : options[0],
+    });
+    resetSearch();
   }
 
   // 从搜索下拉选中标的：切到该标的，清空搜索框与下拉结果
   function pickStock(r: StockResult) {
-    setSymbol(r.symbol);
-    setSymbolLabel(r.name);
+    patch({ symbol: r.symbol, symbolLabel: r.name });
     resetSearch();
   }
 
@@ -99,7 +100,7 @@ export function LightweightShowcase() {
           </label>
           <label className="lw-field">
             标的
-            <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+            <select value={symbol} onChange={(e) => patch({ symbol: e.target.value, symbolLabel: def.options.find((o) => o.value === e.target.value)?.label ?? symbol })}>
               {def.options.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -109,7 +110,7 @@ export function LightweightShowcase() {
           </label>
           <label className="lw-field">
             周期
-            <select value={period} onChange={(e) => setPeriod(e.target.value as KlinePeriod)}>
+            <select value={period} onChange={(e) => patch({ period: e.target.value as KlinePeriod })}>
               {periodOptions.map((p) => (
                 <option key={p} value={p}>
                   {PERIOD_LABEL[p]}
@@ -118,12 +119,12 @@ export function LightweightShowcase() {
             </select>
           </label>
           <label className="lw-field lw-live">
-            <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
+            <input type="checkbox" checked={live} onChange={(e) => patch({ live: e.target.checked })} />
             实时更新
           </label>
           <label className="lw-field">
             历史K线
-            <select value={historyLimit} onChange={(e) => setHistoryLimit(Number(e.target.value))}>
+            <select value={historyLimit} onChange={(e) => patch({ historyLimit: Number(e.target.value) })}>
               {HISTORY_LIMITS.map((n) => (
                 <option key={n} value={n}>
                   {n} 根
