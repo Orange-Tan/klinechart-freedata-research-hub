@@ -48,10 +48,19 @@ function eastmoneyProxyMiddleware() {
           up.pipe(res)
         },
       )
+      // 上游一旦失败（TLS 握手失败、连接被 reset 等），http-proxy 语义是：若还没
+      // 写响应头，就回 502；若已经 writeHead（比如刚发完响应头就断流），writeHead
+      // 会抛 ERR_HTTP_HEADERS_SENT 把 dev server 整个打崩（已多次复现：Node 进程
+      // 直接退出，5173 掉线，浏览器净 poll 全部 ERR_CONNECTION_REFUSED）。这里在
+      // 回调内重试或兜底写 502，都必须先检查 res.headersSent。
       upstream.on('error', (err) => {
         if (!retried) {
           retried = true
           attempt()
+          return
+        }
+        if (res.headersSent) {
+          res.destroy()
           return
         }
         res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' })

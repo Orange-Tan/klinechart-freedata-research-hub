@@ -254,12 +254,14 @@ export const KlinechartsShowcaseChart = forwardRef<
     };
   }, []);
 
-  // symbol 变化：setSymbol 内部 resetData → getBars('init') 重新投喂
+  // symbol 变化：setSymbol 内部 resetData → getBars('init') 重新投喂。
+  // symbol 变化总伴随父级 setHistory([]) 清空（见下方 data effect），但
+  // resetData 内部的 getBars('init') 在数据 effect 之前跑，若直接 setSymbol，
+  // getBars 里 symbolRef 已更新、dataRef 却还是旧标的的数据，会把旧数据喂进
+  // 新图表。故这里只更新 symbolRef；数据 effect 在父级新数据到达时统一
+  // resetData 重载。
   useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart) return;
-    loadedKeyRef.current = '';
-    chart.setSymbol({ ticker: symbol });
+    symbolRef.current = symbol;
   }, [symbol]);
 
   // 周期变化：setPeriod 内部同样 resetData 重载。period prop 是父级每次渲染

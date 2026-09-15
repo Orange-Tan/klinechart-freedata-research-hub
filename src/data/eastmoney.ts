@@ -1,5 +1,6 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
+import { fetchKlinesWithTimeout } from './fetchWithTimeout';
 import { pollSubscribe } from './pollSubscribe';
 import { proxyUrlFor } from './connectivity';
 
@@ -62,7 +63,7 @@ export class EastMoneyDataSource implements KlineDataSource {
     // dev 环境：DNS 坏池问题由 Vite dev server 的 /push2his 代理绕开（见 vite.config.ts），
     // 直接走同源相对路径；生产构建保持源站直连（会如实失败，见文件顶部注释）。
     const target = proxyUrlFor(url);
-    const res = await fetch(target);
+    const res = await fetchKlinesWithTimeout(target);
     if (!res.ok) {
       throw new Error(`东财 API ${res.status}: ${await res.text()}`);
     }

@@ -1,5 +1,6 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
+import { fetchKlinesWithTimeout } from './fetchWithTimeout';
 import { pollSubscribe } from './pollSubscribe';
 
 /** 腾讯原生支持的周期（1m/5m/15m/1h 走 mkline，1d 走 fqkline；4h 无原生接口） */
@@ -66,7 +67,7 @@ export class TencentDataSource implements KlineDataSource {
         `https://ifzq.gtimg.cn/appstock/app/kline/mkline?param=` +
         `${symbol},${m.param},,${limit}`;
     }
-    const res = await fetch(url);
+    const res = await fetchKlinesWithTimeout(url);
     if (!res.ok) {
       throw new Error(`腾讯财经 ${res.status}: ${await res.text()}`);
     }

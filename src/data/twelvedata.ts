@@ -1,5 +1,6 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { PERIOD_ALL } from '../types/ohlcv';
+import { fetchKlinesWithTimeout } from './fetchWithTimeout';
 import { pollSubscribe } from './pollSubscribe';
 
 /** Twelve Data 周期 → API interval 参数（全 6 周期原生支持） */
@@ -53,7 +54,7 @@ export class TwelveDataDataSource implements KlineDataSource {
       apikey: apiKey(),
     });
     const url = `${this.baseUrl}/time_series?${params}`;
-    const res = await fetch(url);
+    const res = await fetchKlinesWithTimeout(url);
     if (!res.ok) {
       throw new Error(`Twelve Data API ${res.status}: ${await res.text()}`);
     }

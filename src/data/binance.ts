@@ -1,5 +1,6 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { PERIOD_ALL } from '../types/ohlcv';
+import { fetchKlinesWithTimeout } from './fetchWithTimeout';
 import { pollSubscribe } from './pollSubscribe';
 
 /** Binance K 线周期 → API interval 参数 */
@@ -40,7 +41,7 @@ export class BinanceDataSource implements KlineDataSource {
       limit: String(limit),
     });
     const url = `${this.baseUrl}/api/v3/klines?${params}`;
-    const res = await fetch(url);
+    const res = await fetchKlinesWithTimeout(url);
     if (!res.ok) {
       throw new Error(`Binance API ${res.status}: ${await res.text()}`);
     }
