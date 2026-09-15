@@ -254,14 +254,17 @@ export const KlinechartsShowcaseChart = forwardRef<
     };
   }, []);
 
-  // symbol 变化：setSymbol 内部 resetData → getBars('init') 重新投喂。
-  // symbol 变化总伴随父级 setHistory([]) 清空（见下方 data effect），但
-  // resetData 内部的 getBars('init') 在数据 effect 之前跑，若直接 setSymbol，
-  // getBars 里 symbolRef 已更新、dataRef 却还是旧标的的数据，会把旧数据喂进
-  // 新图表。故这里只更新 symbolRef；数据 effect 在父级新数据到达时统一
-  // resetData 重载。
+  // symbol 变化：setSymbol 内部 resetData → getBars('init') 重新投喂，且会
+  // 把 this._symbol 更新为新 ticker（getBars 回调里 params.symbol 已是新值）。
+  // 直接调用 setSymbol 让库内部状态与组件同步；数据 effect 随后在父级新数据
+  // 到达时统一 resetData 重载。注意不能只更新 symbolRef 而跳过 setSymbol——
+  // 那样库内部 _symbol 永远停在初始值，一旦切标，getBars 的防错投喂检查
+  // 就会把新请求判成"错标"返回空数据，图表空白（上轮回归引入的 bug）。
   useEffect(() => {
-    symbolRef.current = symbol;
+    const chart = chartRef.current;
+    if (!chart) return;
+    loadedKeyRef.current = '';
+    chart.setSymbol({ ticker: symbol });
   }, [symbol]);
 
   // 周期变化：setPeriod 内部同样 resetData 重载。period prop 是父级每次渲染
