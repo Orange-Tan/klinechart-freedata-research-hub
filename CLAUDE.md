@@ -99,6 +99,9 @@ App (src/App.tsx)  ── 侧边栏切页 ──►  Dashboard (src/pages/Dashbo
 
 ## 已有坑位速查（改到这些文件务必回归验证）
 
+> 完整版见 `docs/金融图表项目踩坑速查.md`（四层：数据源接入 / 图表库适配 / React 工程 / 测试调试，
+> 含可直接复用的代码模式与起步清单）。这里是最常用 7 条：
+
 1. **React `<StrictMode>` 开发态会双跑 mount effect**：任何图表库初始化如果 cleanup 不彻底，会叠出第二个实例。轻量方案是 cleanup 里清理库生成的全部 DOM 子节点（HQChart 就是这么修的）。
 2. **klinecharts v10 没有 `applyNewData`/`updateData`**：别去找公共增量接口，只能用 `setDataLoader`。
 3. **HQChart `ManualUpdateKData` 必须显式传 `DataOffset`**，否则 `newDataCount` 恒为 0，视图冻结在最旧一侧。
@@ -109,6 +112,7 @@ App (src/App.tsx)  ── 侧边栏切页 ──►  Dashboard (src/pages/Dashbo
 
 ## 文档
 
+- `docs/金融图表项目踩坑速查.md`：**新项目/新需求起步先读**。数据源接入 / 图表库适配 / React 工程 / 测试调试四层踩坑全记录 + 可直接复用的代码模式 + 给更大项目的起步清单。
 - `docs/图表库调研报告.md`：选型调研报告（stars/协议/维护状态、四大库优劣势），涉及选型决策时先看它。
 - `src/pages/ResearchReport.tsx`：同一调研报告的页面化版本（数据与文档保持一致，改一处需同步另一处）。
 - `docs/免费行情数据源调研报告.md`：A股/美股/加密货币/期货/基金五大类免费数据源调研（推荐序/实测现状/CORS 分析/各市场接入建议），涉及给 `src/data/` 新增数据源前先看它。
