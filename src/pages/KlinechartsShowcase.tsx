@@ -310,9 +310,9 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
   const [overlayName, setOverlayName] = useState<string>(OVERLAY_NAMES[0] ?? 'straightLine');
   const [candleType, setCandleType] = useState<CandleType>('candle_solid');
   // 指标/画线按钮的内联反馈：贴近操作点闪现"已添加 XX ✓"，1.6s 后恢复，
-  // 用户无需低头看大图下方的状态条（状态条是"无反应"误判的盲区）
-  const [indicatorFeedback, setIndicatorFeedback] = useState<string | null>(null);
-  const [overlayFeedback, setOverlayFeedback] = useState<string | null>(null);
+  // 用户无需低头看大图下方的状态条（状态条是"无反应"误判的盲区）。
+  // 单一 feedback 状态承载两处渲染（画线组内单点渲染，class 按 kind 区分配色）
+  const [feedback, setFeedback] = useState<{ text: string; kind: 'ok' | 'info' } | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
   // 注册类按钮的状态提示（register* 是全局单例，只能注册一次）
   const [customIndicatorDone, setCustomIndicatorDone] = useState(false);
@@ -363,11 +363,13 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
   };
 
   /** 在操作按钮旁边闪现一句反馈（1.6s 后清除），让"添加指标/画线"这类
-   *  一眼看不出反应的操作有就近的即时反馈 */
-  const flashIndicatorFeedback = (message: string) => {
+   *  一眼看不出反应的操作有就近的即时反馈。先清旧 timer 再置新值：
+   *  连点不会让新反馈被旧 timer 提前抹掉（startOverlay 旧实现直接用裸
+   *  setTimeout，连点会竞态）。kind 控制配色（ok 绿 / info 蓝）。 */
+  const flashFeedback = (text: string, kind: 'ok' | 'info' = 'ok') => {
     if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
-    setIndicatorFeedback(message);
-    feedbackTimerRef.current = window.setTimeout(() => setIndicatorFeedback(null), 1600);
+    setFeedback({ text, kind });
+    feedbackTimerRef.current = window.setTimeout(() => setFeedback(null), 1600);
   };
 
   // —— 数据源切换 ——
@@ -379,7 +381,7 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
       sourceId: next,
       symbol: d.symbol,
       symbolLabel: d.label,
-      period: resolvePeriod({ ...chartView, sourceId: next }),
+      period: resolvePeriod(next, chartView.period),
     });
     resetSearch();
     setCrosshairData(null);
@@ -404,12 +406,12 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
     const exists = c.getIndicators().some((ind) => ind.name === indicatorName);
     if (exists) {
       pushStatus(`指标 ${indicatorName} 已存在，跳过添加`, 'warn');
-      flashIndicatorFeedback(`${indicatorName} 已存在`);
+      flashFeedback(`${indicatorName} 已存在`);
       return;
     }
     c.createIndicator(indicatorName, false);
     pushStatus(`已添加指标 ${indicatorName}`, 'ok');
-    flashIndicatorFeedback(`已添加 ${indicatorName} ✓`);
+    flashFeedback(`已添加 ${indicatorName} ✓`);
   };
 
   /** 删除当前选中的指标。删除 VOL 时同步重置子组件的 VOL 防重标记：
@@ -423,7 +425,7 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
       chartRef.current?.resetVolState();
     }
     pushStatus(removed ? `已删除指标 ${indicatorName}` : `指标 ${indicatorName} 不存在，跳过删除`, removed ? 'ok' : 'warn');
-    flashIndicatorFeedback(removed ? `已删除 ${indicatorName}` : `${indicatorName} 不存在`);
+    flashFeedback(removed ? `已删除 ${indicatorName}` : `${indicatorName} 不存在`);
   };
 
   const startOverlay = () => {
@@ -431,8 +433,7 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
     if (!c || !overlayName) return;
     c.createOverlay(overlayName);
     pushStatus(`开始绘制${OVERLAY_LABEL[overlayName] ?? overlayName}：在图上点两下完成`, 'info');
-    setOverlayFeedback(`绘制 ${OVERLAY_LABEL[overlayName] ?? overlayName}：点两下完成`);
-    window.setTimeout(() => setOverlayFeedback(null), 1600);
+    flashFeedback(`绘制 ${OVERLAY_LABEL[overlayName] ?? overlayName}：点两下完成`, 'info');
   };
 
   const registerAndCreateCustomIndicator = () => {
@@ -640,7 +641,6 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
           <button type="button" className="kc-btn" onClick={removeIndicator}>
             删除指标
           </button>
-          {indicatorFeedback && <span className="kc-feedback kc-feedback-ok">{indicatorFeedback}</span>}
         </div>
 
         <div className="kc-group">
@@ -657,7 +657,7 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
           <button type="button" className="kc-btn" onClick={startOverlay}>
             开始绘制
           </button>
-          {overlayFeedback && <span className="kc-feedback kc-feedback-info">{overlayFeedback}</span>}
+          {feedback && <span className={`kc-feedback kc-feedback-${feedback.kind}`}>{feedback.text}</span>}
         </div>
 
         <div className="kc-group">

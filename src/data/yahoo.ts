@@ -1,6 +1,7 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { PERIOD_ALL } from '../types/ohlcv';
 import { fetchKlinesWithTimeout } from './fetchWithTimeout';
+import { normalizeKlines } from './normalizeKlines';
 import { pollSubscribe } from './pollSubscribe';
 import { proxyUrlFor } from './connectivity';
 
@@ -104,8 +105,8 @@ export class YahooDataSource implements KlineDataSource {
         volume,
       });
     }
-    bars.sort((a, b) => a.time - b.time);
-    return bars.slice(-limit);
+    // 上游 timestamp 已是正序，仍走统一收尾（升序 + 截取最近 limit 根）
+    return normalizeKlines(bars, limit);
   }
 
   /**

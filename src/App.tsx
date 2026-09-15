@@ -45,7 +45,7 @@ export default function App() {
     // 会话中不做响应式钳制，否则用户/测试选中的值会被悄悄改回去。
     // 标的不做取值校验：搜索选中的标的（不在源固定下拉里）同样合法，
     // 无效代码会在 fetchKlines 阶段如实报错，由页面错误面板呈现。
-    const period = resolvePeriod(loaded);
+    const period = resolvePeriod(loaded.sourceId, loaded.period);
     if (period === loaded.period) return loaded;
     return { ...loaded, period };
   });

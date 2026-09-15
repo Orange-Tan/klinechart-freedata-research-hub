@@ -1,6 +1,7 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { PERIOD_ALL } from '../types/ohlcv';
 import { fetchKlinesWithTimeout } from './fetchWithTimeout';
+import { normalizeKlines } from './normalizeKlines';
 import { pollSubscribe } from './pollSubscribe';
 
 /** Twelve Data 周期 → API interval 参数（全 6 周期原生支持） */
@@ -95,9 +96,8 @@ export class TwelveDataDataSource implements KlineDataSource {
         volume: row.volume == null ? 0 : Number(row.volume),
       });
     }
-    // values 新 → 旧倒序，转成正序（与全项目其他源一致）后再截取
-    bars.sort((a, b) => a.time - b.time);
-    return bars.slice(-limit);
+    // values 新 → 旧倒序，统一升序 + 截取最近 limit 根（与全项目其他源一致）
+    return normalizeKlines(bars, limit);
   }
 
   /**

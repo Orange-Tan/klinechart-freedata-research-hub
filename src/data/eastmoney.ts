@@ -1,6 +1,7 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
 import { fetchKlinesWithTimeout } from './fetchWithTimeout';
+import { normalizeKlines } from './normalizeKlines';
 import { pollSubscribe } from './pollSubscribe';
 import { proxyUrlFor } from './connectivity';
 
@@ -84,8 +85,8 @@ export class EastMoneyDataSource implements KlineDataSource {
         volume: Number(volume),
       };
     });
-    bars.sort((a, b) => a.time - b.time);
-    return bars.slice(-limit);
+    // 上游按时间倒序返回，统一升序 + 截取最近 limit 根
+    return normalizeKlines(bars, limit);
   }
 
   /**

@@ -7,6 +7,7 @@
  * - 无 checkUrl：服务端库 / 已排除 / 反爬墙，无法在浏览器检测，返回 na（不可直连）。
  */
 import type { DataSourceInfo } from '../pages/dataResearchData';
+import { fetchKlinesWithTimeout } from './fetchWithTimeout';
 
 export type CheckState = 'idle' | 'checking' | 'ok' | 'fail' | 'na';
 
@@ -48,15 +49,14 @@ function resolveCheckUrl(src: DataSourceInfo): string {
 
 function fetchCheck(src: DataSourceInfo): Promise<CheckResult> {
   const url = resolveCheckUrl(src);
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  return fetch(url, { signal: ctrl.signal, cache: 'no-store', redirect: 'follow' })
+  // 复用 fetchKlinesWithTimeout 的超时兜底（8s 显式传入，覆盖 fetchKlinesWithTimeout
+  // 默认 12s）：原来手写的 AbortController + setTimeout 与此同构，见 fetchWithTimeout.ts
+  return fetchKlinesWithTimeout(url, { cache: 'no-store', redirect: 'follow' }, TIMEOUT_MS)
     .then((res) => ({
       state: 'ok' as const,
       detail: `HTTP ${res.status} · ${(performance.now()).toFixed(0)}ms`,
     }))
-    .catch(() => ({ state: 'fail' as const, detail: '被拦截（CORS 或网络不通）' }))
-    .finally(() => clearTimeout(timer));
+    .catch(() => ({ state: 'fail' as const, detail: '被拦截（CORS 或网络不通）' }));
 }
 
 /** script 标签注入：onload 即资源下载成功（即使执行抛错），onerror 才失败 */

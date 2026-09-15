@@ -1,6 +1,7 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
 import { fetchKlinesWithTimeout } from './fetchWithTimeout';
+import { normalizeKlines } from './normalizeKlines';
 import { pollSubscribe } from './pollSubscribe';
 
 /** 腾讯原生支持的周期（1m/5m/15m/1h 走 mkline，1d 走 fqkline；4h 无原生接口） */
@@ -95,9 +96,8 @@ export class TencentDataSource implements KlineDataSource {
         volume: Number(r[5]),
       };
     });
-    // 时间倒序返回（越新越靠前），统一升序
-    bars.sort((a, b) => a.time - b.time);
-    return bars.slice(-limit);
+    // 上游按时间倒序返回（越新越靠前），统一升序 + 截取最近 limit 根
+    return normalizeKlines(bars, limit);
   }
 
   /**

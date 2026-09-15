@@ -13,7 +13,8 @@ import type { StockResult } from '../types/ohlcv';
  *
  * 为什么做双源兜底：两个端点都有偶发不可用（东财偶发不发请求/响应挂起/20s 无回调、
  * smartbox 偶发超时），单靠一个源搜索框会随机失灵。策略：双源同时发出，谁先成功
- * 用谁，不让用户干等。
+ * 用谁，不让用户干等。每个源自带超时（东财 5s / 腾讯 4s）保证必然落定：
+ * 首成功立即采用；双双失败则在最后一个源落定时立即 reject，不再额外干等全局超时。
  *
  * 返回结果的 Type 分类（东财实测）：
  *  - AStock   A 股股票，QuoteID 前缀 0=深 / 1=沪，Symbol 形如 '000001' / '600519'
@@ -37,7 +38,6 @@ const SEARCH_URL =
   'https://searchapi.eastmoney.com/api/suggest/get?type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=10';
 const EASTMONEY_TIMEOUT_MS = 5000;
 const TENCENT_TIMEOUT_MS = 4000;
-const GLOBAL_TIMEOUT_MS = 9000;
 
 /**
  * 搜索 A 股/指数。keyword 为空或长度 < 2 时返回空数组。
@@ -47,7 +47,9 @@ export function searchAStock(keyword: string): Promise<StockResult[]> {
   const kw = keyword.trim();
   if (kw.length < 2) return Promise.resolve([]);
 
-  // 双源竞速：东财 + 腾讯同时发出，谁先成功用谁；都失败时兜底 GLOBAL_TIMEOUT。
+  // 双源竞速：东财 + 腾讯同时发出，首成功即胜（Promise 天然只收第一个 resolve）；
+  // 计数归零表示双源都落定——若仍无一成功，立即 reject（每源自带超时，
+  // 4~5s 内必然落定，无需再挂一个 9s 的全局兜底计时器干等）。
   const eastmoneyPromise = jsonp<SuggestResp>(
     `${SEARCH_URL}&input=${encodeURIComponent(kw)}`,
     'cb',
@@ -57,25 +59,23 @@ export function searchAStock(keyword: string): Promise<StockResult[]> {
   const tencentPromise = jsonpTencent(kw);
 
   return new Promise<StockResult[]>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      reject(new Error('搜索请求超时'));
-    }, GLOBAL_TIMEOUT_MS);
-    // settle 只清计时器（幂等）；resolve 天然只接受第一个调用，重复调用被忽略，
-    // 所以两个来源谁先成功谁决定结果，后到的不影响。
-    const settle = () => window.clearTimeout(timer);
+    let pending = 2;
+    const settle = (fn: () => void) => {
+      // 首个成功 resolve 后，后续成功/失败回调都不再影响结果（幂等）
+      pending -= 1;
+      fn();
+    };
     eastmoneyPromise.then(
-      (v) => {
-        settle();
-        resolve(v);
-      },
-      () => {},
+      (v) => settle(() => resolve(v)),
+      () => settle(() => {
+        if (pending === 0) reject(new Error('搜索请求超时'));
+      }),
     );
     tencentPromise.then(
-      (v) => {
-        settle();
-        resolve(v);
-      },
-      () => {},
+      (v) => settle(() => resolve(v)),
+      () => settle(() => {
+        if (pending === 0) reject(new Error('搜索请求超时'));
+      }),
     );
   });
 }

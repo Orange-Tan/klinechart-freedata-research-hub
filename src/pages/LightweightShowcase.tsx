@@ -57,7 +57,7 @@ export function LightweightShowcase({ chartView, onChartViewChange }: {
       sourceId: next,
       symbol: d.symbol,
       symbolLabel: d.label,
-      period: resolvePeriod({ ...chartView, sourceId: next }),
+      period: resolvePeriod(next, chartView.period),
     });
     resetSearch();
   }

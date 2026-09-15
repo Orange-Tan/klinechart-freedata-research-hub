@@ -79,9 +79,11 @@ export function saveChartViewState(state: ChartViewState): void {
 /**
  * 校验周期在当前数据源下是否受支持，不支持时回退到该源的首个支持周期
  * （源未声明 supportedPeriods 时兜底为全部周期）。
- * App 恢复存档时用它归一化；三个页面切换数据源时同样用它回退周期。
+ * 只依赖 sourceId/period 两个字段：App 恢复存档时用它归一化；三个页面切换
+ * 数据源时同样用它回退周期（旧实现要求调用方拼一个 { ...chartView, sourceId }
+ * 临时对象，改成两参直接传）。
  */
-export function resolvePeriod(state: ChartViewState): KlinePeriod {
-  const periods = supportedPeriodsOf(state.sourceId);
-  return periods.includes(state.period) ? state.period : periods[0];
+export function resolvePeriod(sourceId: DataSourceId, period: KlinePeriod): KlinePeriod {
+  const periods = supportedPeriodsOf(sourceId);
+  return periods.includes(period) ? period : periods[0];
 }

@@ -23,8 +23,8 @@ export interface UseKlineDataOptions {
  * 返回的 error 用统一文案（非受支持周期 / 网络失败），页面据此展示错误提示；
  * retry() 让页面在异常提醒上提供「重试」入口——自增计数加入 effect 依赖，
  * 触发放弃旧请求、按当前参数重新拉取（源 / 标的 / 周期 / 上限 / 实时开关均不变）。
- * loaded 表示当前参数组合的历史数据是否已成功送达（fetch 成功即 true，
- * effect 重跑即 false），Dashboard 用它驱动"周期不受支持"的警告窗口期。
+ * 注意：error 保持 null 且 history 为空，只可能是"数据加载中"（或本轮 fetch 被
+ * 挂起未落定）——页面据此推导"周期不受支持"的警告窗口期，无需单独维护 loaded 状态。
  */
 export function useKlineData({
   sourceId = 'binance',
@@ -37,14 +37,12 @@ export function useKlineData({
 
   const [history, setHistory] = useState<OHLCV[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
     setHistory([]);
-    setLoaded(false); // 新一轮加载开始：卡片进入"未就绪"窗口
 
     // 历史加载完成标记：历史未就绪时收到的实时推送直接丢弃（竞态守卫）
     let historyLoaded = false;
@@ -54,7 +52,6 @@ export function useKlineData({
       .then((bars) => {
         if (cancelled) return;
         historyLoaded = true;
-        setLoaded(true); // 数据成功送达：异常提醒自动消失
         setHistory(bars);
       })
       .catch((err: unknown) => {
@@ -97,5 +94,5 @@ export function useKlineData({
     setRetryKey((k) => k + 1);
   }, []);
 
-  return { history, error, source, loaded, retry };
+  return { history, error, retry };
 }

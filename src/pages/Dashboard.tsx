@@ -38,9 +38,12 @@ export function Dashboard({ chartView, onChartViewChange }: {
   const supported = supportedPeriodsOf(sourceId);
   const supportedHasPeriod = supported.includes(period);
   // 历史数据 + 订阅（含竞态守卫）：source/symbol/period 任一变化都重建
-  const { history, error, loaded, retry } = useKlineData({ sourceId, symbol, period, historyLimit, live });
+  const { history, error, retry } = useKlineData({ sourceId, symbol, period, historyLimit, live });
   // 重试计数：数据源异常提醒上的「重试」按钮自增它，effect 依赖变化即重新拉取
-  const showWarn = supported.length > 0 && !supportedHasPeriod && !loaded;
+  // 「周期不受支持」警告窗口：error 仍为 null（fetch 被挂起/未落定，尚未报错）
+  // 且历史为空（还没拿到任何数据）时提示——不支持周期会 throw → error 非 null
+  // → 走下方 error-panel 而非此警告，所以窗口期与真实"数据加载中"无冲突
+  const showWarn = supported.length > 0 && !supportedHasPeriod && history.length === 0 && error === null;
 
   // 顶部搜索框状态（防抖 + 下拉结果，由共享 hook 管理）
   const search = useStockSearch(sourceId);
@@ -54,7 +57,7 @@ export function Dashboard({ chartView, onChartViewChange }: {
       sourceId: next,
       symbol: d.symbol,
       symbolLabel: d.label,
-      period: resolvePeriod({ ...chartView, sourceId: next }),
+      period: resolvePeriod(next, chartView.period),
     });
     resetSearch();
   }
