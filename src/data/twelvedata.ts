@@ -1,5 +1,6 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { PERIOD_ALL } from '../types/ohlcv';
+import { pollSubscribe } from './pollSubscribe';
 
 /** Twelve Data 周期 → API interval 参数（全 6 周期原生支持） */
 const INTERVAL: Record<KlinePeriod, string> = {
@@ -103,37 +104,7 @@ export class TwelveDataDataSource implements KlineDataSource {
    * 免费 key 限 8 credits/分，轮询与历史请求叠加可能触发 429；失败静默忽略下一轮重试。
    */
   subscribe(symbol: string, period: KlinePeriod, onUpdate: (bar: OHLCV) => void): () => void {
-    const INTERVAL_MS = 2_000;
-    let closed = false;
-    // 飞行中的 fetch 无法中止，用 token 丢弃过期响应，避免旧请求串到新状态
-    let generation = 0;
-    let lastBarTime = 0;
-
-    const tick = async () => {
-      const gen = generation;
-      if (closed) return;
-      try {
-        const bars = await this.fetchKlines(symbol, period, 2);
-        // 取到的快照已过期（symbol/period 已变）：丢弃，避免把旧数据交给订阅方
-        if (gen !== generation || closed) return;
-        const latest = bars[bars.length - 1];
-        if (latest && latest.time !== lastBarTime) {
-          lastBarTime = latest.time;
-          onUpdate(latest);
-        }
-      } catch {
-        // 轮询失败静默忽略（429 限频/网络波动时避免刷屏报错）
-      }
-    };
-
-    void tick();
-    const timer = window.setInterval(() => void tick(), INTERVAL_MS);
-
-    return () => {
-      closed = true;
-      generation += 1; // 使所有飞行中的响应过期
-      window.clearInterval(timer);
-    };
+    return pollSubscribe(() => this.fetchKlines(symbol, period, 2), onUpdate);
   }
 }
 

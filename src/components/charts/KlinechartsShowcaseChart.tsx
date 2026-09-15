@@ -17,6 +17,9 @@ import type { OHLCV } from '../../types/ohlcv';
 export interface KlinechartsShowcaseChartRef {
   /** 拿到底层 Chart 实例，页面控制栏通过它调用全部 API */
   getChart: () => Chart | null;
+  /** 删除 VOL 指标后调用：重置 VOL 防重标记与 paneId，使下一次数据重载
+   *  （init）时按页面默认重新创建 VOL 副图 */
+  resetVolState: () => void;
 }
 
 export interface KlinechartsShowcaseChartProps {
@@ -306,6 +309,12 @@ export const KlinechartsShowcaseChart = forwardRef<
   useImperativeHandle(ref, () => ({
     getChart() {
       return chartRef.current;
+    },
+    // 页面用 getChart() 删除 VOL 指标后调用：重置防重标记与 paneId，
+    // 下一次数据重载（resetData → getBars('init')）会按页面默认重建 VOL 副图
+    resetVolState() {
+      volCreatedRef.current = false;
+      volPaneIdRef.current = null;
     },
   }), []);
 

@@ -20,9 +20,13 @@ export interface CheckResult {
 
 const TIMEOUT_MS = 8000;
 
-/** dev 模式下把「需代理」源的 host 换成 Vite proxy 路径；生产构建保持原 URL（会被 CORS 拦，如实失败） */
-function resolveCheckUrl(src: DataSourceInfo): string {
-  const url = src.checkUrl!;
+/**
+ * dev 模式下把「需代理」数据源 / 适配器的源站 URL 换成 Vite proxy 路径；
+ * 生产构建保持原 URL（会被 CORS 拦，如实失败）。
+ * 代理前缀表只维护这一份：连通性检测与各数据源适配器（yahoo.ts / eastmoney.ts）
+ * 在 dev 下都经它取 dev URL，vite.config.ts 的 proxy / eastmoney 中间件挂对应前缀。
+ */
+export function proxyUrlFor(url: string): string {
   if (!import.meta.env.DEV) return url;
   const proxyHosts: Record<string, string> = {
     'query1.finance.yahoo.com': '/yh',
@@ -31,10 +35,15 @@ function resolveCheckUrl(src: DataSourceInfo): string {
     'www.shfe.com.cn': '/shfe',
     'push2his.eastmoney.com': '/push2his',
   };
-  const host = proxyHosts[new URL(url).hostname];
-  if (!host) return url;
   const u = new URL(url);
-  return `${host}${u.pathname}${u.search}`;
+  const prefix = proxyHosts[u.hostname];
+  if (!prefix) return url;
+  return `${prefix}${u.pathname}${u.search}`;
+}
+
+/** 连通性检测的 checkUrl → dev 下换代理路径；生产保持原 URL */
+function resolveCheckUrl(src: DataSourceInfo): string {
+  return proxyUrlFor(src.checkUrl!);
 }
 
 function fetchCheck(src: DataSourceInfo): Promise<CheckResult> {

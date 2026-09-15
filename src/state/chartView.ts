@@ -23,22 +23,36 @@ export interface ChartViewState {
 
 const STORAGE_KEY = 'kline-chart-view-state';
 
+/** 各页首次访问（无存档）时的默认筛选状态（与 loadChartViewState 的回退值一致） */
+export const DEFAULT_CHART_VIEW: ChartViewState = {
+  sourceId: 'tencent',
+  symbol: SOURCE_DEFAULTS.tencent.symbol,
+  symbolLabel: SOURCE_DEFAULTS.tencent.label,
+  period: '1d',
+  live: true,
+  historyLimit: DEFAULT_HISTORY_LIMIT,
+};
+
 /**
  * 读取已持久化的状态。返回 null 表示无存档（首次访问 / 清除过 localStorage），
- * 调用方据此回退到各页默认值（腾讯财经 + 上证指数 + 日线）。
+ * 调用方据此回退到 DEFAULT_CHART_VIEW（腾讯财经 + 上证指数 + 日线）。
  * 任何异常（JSON 损坏 / 存档结构不合法）都当作无存档处理。
+ *
+ * 标的只校验类型不校验取值：搜索选中的标的（不在源固定下拉里）同样合法，
+ * 无效代码会在 fetchKlines 阶段如实报错，由页面错误面板呈现，而非静默重置。
  */
 export function loadChartViewState(): ChartViewState | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const p = JSON.parse(raw) as Partial<ChartViewState>;
+    const sourceId = p.sourceId;
     // sourceId 必须是注册表里真实存在的键，否则后续 SOURCE_DEFAULTS[sourceId] 取不到默认值
-    if (typeof p.sourceId !== 'string' || !(p.sourceId in SOURCE_DEFAULTS) || typeof p.symbol !== 'string') {
+    if (typeof sourceId !== 'string' || !(sourceId in SOURCE_DEFAULTS) || typeof p.symbol !== 'string') {
       return null;
     }
     return {
-      sourceId: p.sourceId as DataSourceId,
+      sourceId,
       symbol: p.symbol,
       symbolLabel: typeof p.symbolLabel === 'string' ? p.symbolLabel : p.symbol,
       period: (typeof p.period === 'string' ? p.period : '1d') as KlinePeriod,
@@ -63,20 +77,9 @@ export function saveChartViewState(state: ChartViewState): void {
 }
 
 /**
- * 校验持久化状态中的标的在当前数据源下是否仍可下拉选择。
- * 下标与标的选项来自 SOURCE_DEFAULTS[sourceId]（含"标的下拉"与"搜索选中标的"两类）。
- * 选不中（如存档期标的）时：若该源有可选项则回退首个，否则回退源默认 symbol。
- */
-export function resolveSymbol(state: ChartViewState): { symbol: string; symbolLabel: string } {
-  const def = SOURCE_DEFAULTS[state.sourceId];
-  const has = def.options.some((o) => o.value === state.symbol);
-  if (has) return { symbol: state.symbol, symbolLabel: state.symbolLabel };
-  return { symbol: def.symbol, symbolLabel: def.label };
-}
-
-/**
- * 校验持久化状态中的周期在当前数据源下是否受支持。
- * 不支持时回退到该源的首个支持周期；源未声明 supportedPeriods 时兜底为全部周期。
+ * 校验周期在当前数据源下是否受支持，不支持时回退到该源的首个支持周期
+ * （源未声明 supportedPeriods 时兜底为全部周期）。
+ * App 恢复存档时用它归一化；三个页面切换数据源时同样用它回退周期。
  */
 export function resolvePeriod(state: ChartViewState): KlinePeriod {
   const periods = supportedPeriodsOf(state.sourceId);

@@ -17,6 +17,7 @@ import {
 } from '../components/charts/KlinechartsShowcaseChart';
 import type { CandleType } from 'klinecharts';
 import type { ChartViewState } from '../state/chartView';
+import { resolvePeriod } from '../state/chartView';
 import './KlinechartsShowcase.css';
 
 /** 页首大图需要 ≥ MIN_BARS 根历史才敢展示全量功能（指标/画线不空洞） */
@@ -271,11 +272,6 @@ function fmt(n: number, digits = 2): string {
   return n.toFixed(digits);
 }
 
-/** 周期标签（页面周期下拉 + 十字光标 OHLC 顶部行复用） */
-function periodLabelOf(period: KlinePeriod): string {
-  return PERIOD_LABEL[period];
-}
-
 /**
  * klinecharts v10 详解页：页首大图 + 全量文档。
  *
@@ -313,6 +309,11 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
   const [indicatorName, setIndicatorName] = useState<string>(INDICATOR_NAMES[0] ?? 'MA');
   const [overlayName, setOverlayName] = useState<string>(OVERLAY_NAMES[0] ?? 'straightLine');
   const [candleType, setCandleType] = useState<CandleType>('candle_solid');
+  // 指标/画线按钮的内联反馈：贴近操作点闪现"已添加 XX ✓"，1.6s 后恢复，
+  // 用户无需低头看大图下方的状态条（状态条是"无反应"误判的盲区）
+  const [indicatorFeedback, setIndicatorFeedback] = useState<string | null>(null);
+  const [overlayFeedback, setOverlayFeedback] = useState<string | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
   // 注册类按钮的状态提示（register* 是全局单例，只能注册一次）
   const [customIndicatorDone, setCustomIndicatorDone] = useState(false);
   const [customOverlayDone, setCustomOverlayDone] = useState(false);
@@ -361,13 +362,25 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
     setStatus({ message, kind });
   };
 
+  /** 在操作按钮旁边闪现一句反馈（1.6s 后清除），让"添加指标/画线"这类
+   *  一眼看不出反应的操作有就近的即时反馈 */
+  const flashIndicatorFeedback = (message: string) => {
+    if (feedbackTimerRef.current) window.clearTimeout(feedbackTimerRef.current);
+    setIndicatorFeedback(message);
+    feedbackTimerRef.current = window.setTimeout(() => setIndicatorFeedback(null), 1600);
+  };
+
   // —— 数据源切换 ——
 
   /** 切换数据源：标的重置为该源默认，搜索清空，周期回退到该源支持的第一个周期 */
   function handleSourceChange(next: DataSourceId) {
     const d = SOURCE_DEFAULTS[next];
-    const options = supportedPeriodsOf(next);
-    patch({ sourceId: next, symbol: d.symbol, symbolLabel: d.label, period: options.includes(period) ? period : options[0] });
+    patch({
+      sourceId: next,
+      symbol: d.symbol,
+      symbolLabel: d.label,
+      period: resolvePeriod({ ...chartView, sourceId: next }),
+    });
     resetSearch();
     setCrosshairData(null);
     pushStatus(`数据源已切换为 ${getDataSource(next).label}`, 'info');
@@ -391,10 +404,26 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
     const exists = c.getIndicators().some((ind) => ind.name === indicatorName);
     if (exists) {
       pushStatus(`指标 ${indicatorName} 已存在，跳过添加`, 'warn');
+      flashIndicatorFeedback(`${indicatorName} 已存在`);
       return;
     }
     c.createIndicator(indicatorName, false);
     pushStatus(`已添加指标 ${indicatorName}`, 'ok');
+    flashIndicatorFeedback(`已添加 ${indicatorName} ✓`);
+  };
+
+  /** 删除当前选中的指标。删除 VOL 时同步重置子组件的 VOL 防重标记：
+   *  下次数据重载（resetData → getBars('init')）会按页面默认重建 VOL 副图，
+   *  否则防重 ref 仍为 true，删除后 VOL 再也回不来。 */
+  const removeIndicator = () => {
+    const c = chart();
+    if (!c || !indicatorName) return;
+    const removed = c.removeIndicator({ name: indicatorName });
+    if (removed && indicatorName === 'VOL') {
+      chartRef.current?.resetVolState();
+    }
+    pushStatus(removed ? `已删除指标 ${indicatorName}` : `指标 ${indicatorName} 不存在，跳过删除`, removed ? 'ok' : 'warn');
+    flashIndicatorFeedback(removed ? `已删除 ${indicatorName}` : `${indicatorName} 不存在`);
   };
 
   const startOverlay = () => {
@@ -402,6 +431,8 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
     if (!c || !overlayName) return;
     c.createOverlay(overlayName);
     pushStatus(`开始绘制${OVERLAY_LABEL[overlayName] ?? overlayName}：在图上点两下完成`, 'info');
+    setOverlayFeedback(`绘制 ${OVERLAY_LABEL[overlayName] ?? overlayName}：点两下完成`);
+    window.setTimeout(() => setOverlayFeedback(null), 1600);
   };
 
   const registerAndCreateCustomIndicator = () => {
@@ -606,6 +637,10 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
           <button type="button" className="kc-btn" onClick={addIndicator}>
             添加指标
           </button>
+          <button type="button" className="kc-btn" onClick={removeIndicator}>
+            删除指标
+          </button>
+          {indicatorFeedback && <span className="kc-feedback kc-feedback-ok">{indicatorFeedback}</span>}
         </div>
 
         <div className="kc-group">
@@ -622,6 +657,7 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
           <button type="button" className="kc-btn" onClick={startOverlay}>
             开始绘制
           </button>
+          {overlayFeedback && <span className="kc-feedback kc-feedback-info">{overlayFeedback}</span>}
         </div>
 
         <div className="kc-group">
@@ -696,7 +732,7 @@ export function KlinechartsShowcase({ chartView, onChartViewChange }: {
         {error && (
           <div className="kc-stage-error">
             <span className="kc-stage-error-msg">
-              数据异常：{symbolLabel} {periodLabelOf(period)} {error}
+              数据异常：{symbolLabel} {PERIOD_LABEL[period]} {error}
               {isSourceOrNetworkError(error) && '（若为 WAF 拦截等外部因素，可切换数据源或周期重试）'}
             </span>
             <button type="button" className="kc-btn" onClick={retry}>

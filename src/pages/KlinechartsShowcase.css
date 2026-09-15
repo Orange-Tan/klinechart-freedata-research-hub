@@ -185,6 +185,33 @@
   border-color: #26a69a;
 }
 
+/* 指标/画线按钮旁的闪现反馈：操作立即在此处给出文字确认，避免用户
+   只看图下方状态条而误判"点击无反应"（大图里新增副图/画线往往不显眼） */
+.kc-feedback {
+  font-size: 12px;
+  white-space: nowrap;
+  animation: kc-feedback-pop 0.18s ease-out;
+}
+
+.kc-feedback-ok {
+  color: #9ece6a;
+}
+
+.kc-feedback-info {
+  color: #7aa2f7;
+}
+
+@keyframes kc-feedback-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* ===== 大图舞台 ===== */
 .kc-stage {
   position: relative;

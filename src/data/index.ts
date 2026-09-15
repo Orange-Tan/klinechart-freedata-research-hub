@@ -8,7 +8,8 @@ import type { KlineDataSource } from '../types/ohlcv';
 /**
  * 数据源注册表 —— 新增数据源在这里注册，UI 即可选择。
  * 注意：对象键顺序 = UI 下拉框顺序（dataSourceList = Object.values(dataSources)）。
- * 默认数据源由各页面组件内的 useState<DataSourceId>('tencent') 硬编码，与此处无关。
+ * 默认数据源（无存档时回退）在 src/state/chartView.ts 的 DEFAULT_CHART_VIEW，
+ * 与 loadChartViewState 的回退链共用，与此处无关。
  */
 export const dataSources = {
   tencent: new TencentDataSource(),

@@ -7,9 +7,9 @@ import { LightweightShowcase } from './pages/LightweightShowcase';
 import { KlinechartsShowcase } from './pages/KlinechartsShowcase';
 import { Icon, iconOf } from './components/Icon';
 import {
+  DEFAULT_CHART_VIEW,
   loadChartViewState,
   resolvePeriod,
-  resolveSymbol,
   saveChartViewState,
   type ChartViewState,
 } from './state/chartView';
@@ -34,31 +34,20 @@ const PAGES = [
 /** 展开/折叠切换图标：按当前状态取对应图标 */
 const SIDEBAR_TOGGLE_ICON = (open: boolean) => (open ? iconOf('侧栏收起') : iconOf('侧栏展开'));
 
-/** 各页首次访问（无存档）时的默认筛选状态 */
-const DEFAULT_VIEW: ChartViewState = {
-  sourceId: 'tencent',
-  symbol: 'sh000001',
-  symbolLabel: '上证指数',
-  period: '1d',
-  live: true,
-  historyLimit: 300,
-};
-
 export default function App() {
   // 看板/两个详页共用的筛选状态（数据源/标的/周期/实时/根数），全局持有：
   // 组件卸载（切页）再挂载时从 localStorage 恢复，不退回默认腾讯财经。
   const [chartView, setChartView] = useState<ChartViewState>(() => {
     const loaded = loadChartViewState();
-    if (!loaded) return DEFAULT_VIEW;
-    // 仅在恢复存档时归一化：标的/周期若在存档后已不再可用（如该源删过选项/周期），
-    // 回退到该源默认，避免把非法值下传给页面导致 select 失配或拉取失败。
+    if (!loaded) return DEFAULT_CHART_VIEW;
+    // 仅在恢复存档时归一化：周期若在存档后已不再支持（如该源删过周期），
+    // 回退到该源首个支持周期，避免把非法值下传给页面导致 select 失配或拉取失败。
     // 会话中不做响应式钳制，否则用户/测试选中的值会被悄悄改回去。
-    const { symbol, symbolLabel } = resolveSymbol(loaded);
+    // 标的不做取值校验：搜索选中的标的（不在源固定下拉里）同样合法，
+    // 无效代码会在 fetchKlines 阶段如实报错，由页面错误面板呈现。
     const period = resolvePeriod(loaded);
-    if (symbol === loaded.symbol && symbolLabel === loaded.symbolLabel && period === loaded.period) {
-      return loaded;
-    }
-    return { ...loaded, symbol, symbolLabel, period };
+    if (period === loaded.period) return loaded;
+    return { ...loaded, period };
   });
   // 选项变更时同步写 localStorage（值随渲染一并更新，切页后即可恢复）
   useEffect(() => {

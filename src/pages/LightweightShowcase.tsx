@@ -11,6 +11,7 @@ import {
   useStockSearch,
 } from './controlsShared';
 import type { ChartViewState } from '../state/chartView';
+import { resolvePeriod } from '../state/chartView';
 import {
   LightweightShowcaseChart,
   type LightweightShowcaseChartRef,
@@ -52,12 +53,11 @@ export function LightweightShowcase({ chartView, onChartViewChange }: {
   // 数据源切换：标的重置为该源默认；搜索清空；周期回退到该源支持的第一个周期
   function handleSourceChange(next: DataSourceId) {
     const d = SOURCE_DEFAULTS[next];
-    const options = supportedPeriodsOf(next);
     patch({
       sourceId: next,
       symbol: d.symbol,
       symbolLabel: d.label,
-      period: options.includes(period) ? period : options[0],
+      period: resolvePeriod({ ...chartView, sourceId: next }),
     });
     resetSearch();
   }

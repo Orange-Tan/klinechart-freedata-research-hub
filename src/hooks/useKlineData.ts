@@ -11,19 +11,20 @@ export interface UseKlineDataOptions {
   historyLimit?: number;
   /** 是否订阅实时更新（默认开） */
   live?: boolean;
-  /** 数据源变更后保持 symbol 有效：若源有默认 symbol 会校验 */
 }
 
 /**
  * 单个 K 线图页面的数据 hook：拉历史 + 订阅实时，返回归一化结果。
  *
- * 与 Dashboard 同源的数据流（见 CLAUDE.md「数据流」）：历史请求先回，订阅轮询
- * 可能更早返回的"最新一根未收 K 线"在 historyLoaded 置位前直接丢弃，保证图表
- * 拿到的首批数据永远是完整历史，避免画出来只剩 1 根。
+ * 三页（Dashboard / 两个单库详页）共用同一数据流（见 CLAUDE.md「数据流」）：
+ * 历史请求先回，订阅轮询可能更早返回的"最新一根未收 K 线"在 historyLoaded
+ * 置位前直接丢弃，保证图表拿到的首批数据永远是完整历史，避免画出来只剩 1 根。
  *
  * 返回的 error 用统一文案（非受支持周期 / 网络失败），页面据此展示错误提示；
  * retry() 让页面在异常提醒上提供「重试」入口——自增计数加入 effect 依赖，
  * 触发放弃旧请求、按当前参数重新拉取（源 / 标的 / 周期 / 上限 / 实时开关均不变）。
+ * loaded 表示当前参数组合的历史数据是否已成功送达（fetch 成功即 true，
+ * effect 重跑即 false），Dashboard 用它驱动"周期不受支持"的警告窗口期。
  */
 export function useKlineData({
   sourceId = 'binance',
@@ -36,12 +37,14 @@ export function useKlineData({
 
   const [history, setHistory] = useState<OHLCV[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
     setHistory([]);
+    setLoaded(false); // 新一轮加载开始：卡片进入"未就绪"窗口
 
     // 历史加载完成标记：历史未就绪时收到的实时推送直接丢弃（竞态守卫）
     let historyLoaded = false;
@@ -51,6 +54,7 @@ export function useKlineData({
       .then((bars) => {
         if (cancelled) return;
         historyLoaded = true;
+        setLoaded(true); // 数据成功送达：异常提醒自动消失
         setHistory(bars);
       })
       .catch((err: unknown) => {
@@ -93,5 +97,5 @@ export function useKlineData({
     setRetryKey((k) => k + 1);
   }, []);
 
-  return { history, error, source, retry };
+  return { history, error, source, loaded, retry };
 }

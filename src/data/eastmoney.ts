@@ -1,5 +1,7 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
+import { pollSubscribe } from './pollSubscribe';
+import { proxyUrlFor } from './connectivity';
 
 const EASTMONEY_PERIODS: readonly KlinePeriod[] = ['1m', '5m', '15m', '1h', '1d'];
 
@@ -59,7 +61,7 @@ export class EastMoneyDataSource implements KlineDataSource {
     const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?${params}`;
     // dev 环境：DNS 坏池问题由 Vite dev server 的 /push2his 代理绕开（见 vite.config.ts），
     // 直接走同源相对路径；生产构建保持源站直连（会如实失败，见文件顶部注释）。
-    const target = import.meta.env.DEV ? `/push2his${new URL(url).pathname}?${params}` : url;
+    const target = proxyUrlFor(url);
     const res = await fetch(target);
     if (!res.ok) {
       throw new Error(`东财 API ${res.status}: ${await res.text()}`);
@@ -90,35 +92,7 @@ export class EastMoneyDataSource implements KlineDataSource {
    * 因此轮询退化为拉最新 1 根历史——dev 下经 /push2his 代理可取数，失败时静默忽略。
    */
   subscribe(symbol: string, period: KlinePeriod, onUpdate: (bar: OHLCV) => void): () => void {
-    const INTERVAL_MS = 2_000;
-    let closed = false;
-    let generation = 0;
-    let lastBarTime = 0;
-
-    const tick = async () => {
-      const gen = generation;
-      if (closed) return;
-      try {
-        const bars = await this.fetchKlines(symbol, period, 1);
-        if (gen !== generation || closed) return;
-        const latest = bars[bars.length - 1];
-        if (latest && latest.time !== lastBarTime) {
-          lastBarTime = latest.time;
-          onUpdate(latest);
-        }
-      } catch {
-        // 轮询失败静默忽略（DNS 坏池/网络波动时避免刷屏报错）
-      }
-    };
-
-    void tick();
-    const timer = window.setInterval(() => void tick(), INTERVAL_MS);
-
-    return () => {
-      closed = true;
-      generation += 1;
-      window.clearInterval(timer);
-    };
+    return pollSubscribe(() => this.fetchKlines(symbol, period, 1), onUpdate);
   }
 
   searchSymbols(keyword: string) {

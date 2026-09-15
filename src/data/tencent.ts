@@ -1,5 +1,6 @@
 import type { OHLCV, KlineDataSource, KlinePeriod } from '../types/ohlcv';
 import { searchAStock } from './aShareSearch';
+import { pollSubscribe } from './pollSubscribe';
 
 /** 腾讯原生支持的周期（1m/5m/15m/1h 走 mkline，1d 走 fqkline；4h 无原生接口） */
 const TENCENT_PERIODS: readonly KlinePeriod[] = ['1m', '5m', '15m', '1h', '1d'];
@@ -103,35 +104,7 @@ export class TencentDataSource implements KlineDataSource {
    * 模拟实时刷新，与 Binance 数据源一致。
    */
   subscribe(symbol: string, period: KlinePeriod, onUpdate: (bar: OHLCV) => void): () => void {
-    const INTERVAL_MS = 2_000;
-    let closed = false;
-    let generation = 0;
-    let lastBarTime = 0;
-
-    const tick = async () => {
-      const gen = generation;
-      if (closed) return;
-      try {
-        const bars = await this.fetchKlines(symbol, period, 2);
-        if (gen !== generation || closed) return;
-        const latest = bars[bars.length - 1];
-        if (latest && latest.time !== lastBarTime) {
-          lastBarTime = latest.time;
-          onUpdate(latest);
-        }
-      } catch {
-        // 轮询失败静默忽略，下一轮重试
-      }
-    };
-
-    void tick();
-    const timer = window.setInterval(() => void tick(), INTERVAL_MS);
-
-    return () => {
-      closed = true;
-      generation += 1;
-      window.clearInterval(timer);
-    };
+    return pollSubscribe(() => this.fetchKlines(symbol, period, 2), onUpdate);
   }
 
   searchSymbols(keyword: string) {
